@@ -6,7 +6,6 @@ local TierTimeFactor = 1.2 --How much the time is increased per tier
 local ItemTimeFactor = 1.2 --How much the time is increased per unique ore used to make the product normally, unused right now
 
 local RepliOres = { }
-local RepliOresFluids = { }
 local RepliItems = { }
 local ProcessedRepliItems = { }
 local RepliTableTable = { }
@@ -332,7 +331,7 @@ local function GetTechBorder(Item)
 	return "tech-repl-"..GetReplicationTier(Item)
 end
 
-local function GenerateRepliRecipeAndTech(Item)
+local function GenerateRepliRecipeAndTech(Item, Table, TableIndex)
 	log("Generate recipe and tech for "..Item.name)
 	if CheckMasterTable(Item.name, 1) == Item.name then
 		table.insert(ProcessedRepliItems, Item) --Place the item in the "finished" table, so it's easier to keep track of what's been processed.
@@ -413,17 +412,17 @@ local function GenerateRepliRecipeAndTech(Item)
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-1", "replication-2")
 		end
 		if CheckMasterTable(Item.name, 2) > 3 then
-			LSlib.technology.removeIngredient(Item.name.."-replication-research", "tenemut")
-			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-scoop")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "dark-matter-transducer")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-2", "replication-3")
 		end
 		if CheckMasterTable(Item.name, 2) > 4 then
-			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-transducer")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "matter-conduit")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-3", "replication-4")
 		end
 		if CheckMasterTable(Item.name, 2) > 5 then
+			LSlib.technology.removeIngredient(Item.name.."-replication-research", "tenemut")
+			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-scoop")
+			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-transducer")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "matter-conduit")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-4", "replication-5")
 		end
@@ -434,20 +433,13 @@ end
 local function ApplyRecipePrereqs(Item)
 	local prereqtable = { }
 	prereqtable = CheckMasterTable(Item, 4)
-	if prereqtable then
-		for i, prereq in pairs(prereqtable) do
-			LSlib.technology.addPrerequisite(Item.."-replication-research", prereq.."-replication-research")
-		end
+	for i, prereq in pairs(prereqtable) do
+		LSlib.technology.addPrerequisite(Item.."-replication-research", prereq.."-replication-research")
 	end
 end
 
---Start by documenting all items and fluids, and ensuring there's a recipe that makes it. Or if it's a resource.
+--Start by documenting all items, and ensuring there's a recipe that makes it. Or if it's a resource.
 for i, Item in pairs(data.raw.item) do
-	if CheckRecipeResultTableValue(Item.name) == true then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Fluid in pairs(data.raw.fluid) do
 	if CheckRecipeResultTableValue(Item.name) == true then
 		table.insert(RepliItems,Item.name)
 	end
@@ -458,21 +450,16 @@ for _, resourceData in pairs(data.raw.resource) do
 	if resourceData.category and stdlib.contains(resourceData.category, "deep") and stdlib.contains(resourceData.category, "mining") or stdlib.contains(resourceData.category, "mine") then
 
 	elseif resourceData.autoplace and resourceData.minable then
-		table.insert(RepliOres,data.raw.item[resourceData.minable.result])
+		table.insert(RepliOres,resourceData.minable.result)
 		if resourceData.minable.results then
-			for _, result in pairs(resourceData.minable.results) do
-				if result.type == "fluid" then
-					table.insert(RepliOres,data.raw.fluid[result.name])
-				else
-					table.insert(RepliOres,data.raw.item[result.name])
-				end
+			for _, result in pairs(resourceData.minable.results) do 
+				table.insert(RepliOres,result.name)
 			end
 		end
 	end
 end
 log("Items Table: "..serpent.block(RepliItems))
 log("Ores Table: "..serpent.block(RepliOres))
-log("Ores Table: "..serpent.block(RepliOresFluids))
 
 
 --Start recipe generation with ores
@@ -491,17 +478,13 @@ end
 for i, Item in pairs(RepliItems) do
 	GetRecipeIngredientBreakdown(Item)
 end
---Recipe and tech generation with ore
-for i, Item in pairs(RepliOres) do
-	GenerateRepliRecipeAndTech(Item)
-end
 --Recipe and tech generation with everything else
 for i, Item in pairs(RepliItems) do
-	GenerateRepliRecipeAndTech(data.raw.item[Item])
+	GenerateRepliRecipeAndTech(data.raw.item[Item], RepliItems, i)
 end
 --Now that all techs are generated, apply prereqs
 for i, Item in pairs(RepliItems) do
-	ApplyRecipePrereqs(Item)
+	--ApplyRecipePrereqs(Item)
 end
 
 LogAllItemValues()
