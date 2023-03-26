@@ -1,0 +1,15 @@
+{
+  "name": "fire-replicators",
+  "version": "1.0.0",
+  "factorio_version": "1.1",
+  "title": "Fire Replicators",
+  "author": "James Fire",
+  "homepage": "",
+  "description": "Forked from Shades Replicators, this mod adds replicators, machines which can produce items using electricity and liquid matter. Uses scrip-generation of techs and recipes to make replication for every item in the game that has at least 1 recipe that can make it. Liquid Matter is obtained by processing raw resources.",
+  "dependencies": [
+    "base >= 1.1",
+	"LSlib",
+	"stdlib",
+	"!dark-tech"
+  ]
+}
