@@ -319,7 +319,7 @@ local function LogAllItemValues()
 end
 
 local function GetReplicationTier(Item)
-	local ReplicationTier = math.min(CheckMasterTable(Item, 2),5,5)
+	local ReplicationTier = math.min(CheckMasterTable(Item, 2),7)
 	return ReplicationTier
 end
 
@@ -331,12 +331,18 @@ local function GetTechBorder(Item)
 	return "tech-repl-"..GetReplicationTier(Item)
 end
 
-local function GenerateRepliRecipeAndTech(Item, Table, TableIndex)
+local function GenerateRepliRecipeAndTech(Item)
 	log("Generate recipe and tech for "..Item.name)
 	if CheckMasterTable(Item.name, 1) == Item.name then
 		table.insert(ProcessedRepliItems, Item) --Place the item in the "finished" table, so it's easier to keep track of what's been processed.
+		local ItemType = nil
 		local ItemIcon = nil
 		local ItemIconSize = 32
+		if Item.type == "fluid" then
+			ItemType = "fluid"
+		else
+			ItemType = "item"
+		end
 		if Item.icon then
 			ItemIcon = Item.icon
 		end
@@ -369,7 +375,7 @@ local function GenerateRepliRecipeAndTech(Item, Table, TableIndex)
 					{type = "fluid", name = "eridium", amount = BaseMatterCost*CheckMasterTable(Item.name, 3) },
 				},
 				results = {
-					{ Item.name, 1 },
+					{ name = Item.name, amount = 1, type = ItemType },
 				},
 				subgroup = "replication-"..tostring(GetReplicationTier(Item.name)),
 				order = "a",
@@ -407,7 +413,7 @@ local function GenerateRepliRecipeAndTech(Item, Table, TableIndex)
 			},
 		})
 		LSlib.technology.addPrerequisite(Item.name.."-replication-research", "replication-1")
-		if CheckMasterTable(Item.name, 2) > 2 then
+		if CheckMasterTable(Item.name, 2) > 1 then
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 3, "dark-matter-scoop")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-1", "replication-2")
 		end
@@ -415,11 +421,11 @@ local function GenerateRepliRecipeAndTech(Item, Table, TableIndex)
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "dark-matter-transducer")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-2", "replication-3")
 		end
-		if CheckMasterTable(Item.name, 2) > 4 then
+		if CheckMasterTable(Item.name, 2) > 5 then
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "matter-conduit")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-3", "replication-4")
 		end
-		if CheckMasterTable(Item.name, 2) > 5 then
+		if CheckMasterTable(Item.name, 2) > 7 then
 			LSlib.technology.removeIngredient(Item.name.."-replication-research", "tenemut")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-scoop")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-transducer")
@@ -430,16 +436,49 @@ local function GenerateRepliRecipeAndTech(Item, Table, TableIndex)
 	end
 end
 
+--Apply prereqs so things like Steel replication need iron replication
 local function ApplyRecipePrereqs(Item)
 	local prereqtable = { }
 	prereqtable = CheckMasterTable(Item, 4)
-	for i, prereq in pairs(prereqtable) do
-		LSlib.technology.addPrerequisite(Item.."-replication-research", prereq.."-replication-research")
+	if prereqtable then
+		for i, prereq in pairs(prereqtable) do
+			LSlib.technology.addPrerequisite(Item.."-replication-research", prereq.."-replication-research")
+		end
 	end
 end
 
---Start by documenting all items, and ensuring there's a recipe that makes it. Or if it's a resource.
+--Start by documenting all items, fluids, modules, and tools, and ensuring there's a recipe that makes it. Or if it's a resource.
 for i, Item in pairs(data.raw.item) do
+	if CheckRecipeResultTableValue(Item.name) == true then
+		table.insert(RepliItems,Item.name)
+	end
+end
+for i, Item in pairs(data.raw.fluid) do
+	if CheckRecipeResultTableValue(Item.name) == true then
+		table.insert(RepliItems,Item.name)
+	end
+end
+for i, Item in pairs(data.raw.module) do
+	if CheckRecipeResultTableValue(Item.name) == true then
+		table.insert(RepliItems,Item.name)
+	end
+end
+for i, Item in pairs(data.raw.tool) do
+	if CheckRecipeResultTableValue(Item.name) == true then
+		table.insert(RepliItems,Item.name)
+	end
+end
+for i, Item in pairs(data.raw.ammo) do
+	if CheckRecipeResultTableValue(Item.name) == true then
+		table.insert(RepliItems,Item.name)
+	end
+end
+for i, Item in pairs(data.raw.capsule) do
+	if CheckRecipeResultTableValue(Item.name) == true then
+		table.insert(RepliItems,Item.name)
+	end
+end
+for i, Item in pairs(data.raw["rail-planner"]) do
 	if CheckRecipeResultTableValue(Item.name) == true then
 		table.insert(RepliItems,Item.name)
 	end
@@ -458,6 +497,14 @@ for _, resourceData in pairs(data.raw.resource) do
 		end
 	end
 end
+--Insert wood manually, if it's not already there
+if CheckTableValue("wood",RepliOres) == false then
+	table.insert(RepliOres, "wood")
+end
+--Insert water manually, if it's not already there
+if CheckTableValue("water",RepliTableTable) == false then
+	table.insert(RepliOres, "water")
+end
 log("Items Table: "..serpent.block(RepliItems))
 log("Ores Table: "..serpent.block(RepliOres))
 
@@ -466,25 +513,49 @@ log("Ores Table: "..serpent.block(RepliOres))
 for i, Item in pairs(RepliOres) do
 	table.insert(RepliTableTable,{ Item, 0, 1 })
 end
---Insert wood manually, if it's not already there
-if CheckTableValue("wood",RepliTableTable) == false then
-	table.insert(RepliTableTable,{ "wood", 0, 1 })
-end
---Insert water manually, if it's not already there
-if CheckTableValue("water",RepliTableTable) == false then
-	table.insert(RepliTableTable,{ "water", 0, 1 })
-end
 --Calculate item values
 for i, Item in pairs(RepliItems) do
 	GetRecipeIngredientBreakdown(Item)
 end
+--Recipe and tech generation with ores
+for i, Item in pairs(RepliOres) do
+	if data.raw.item[Item] then
+		GenerateRepliRecipeAndTech(data.raw.item[Item])
+	elseif data.raw.fluid[Item] then
+		GenerateRepliRecipeAndTech(data.raw.fluid[Item])
+	elseif data.raw.module[Item] then
+		GenerateRepliRecipeAndTech(data.raw.module[Item])
+	elseif data.raw.tool[Item] then
+		GenerateRepliRecipeAndTech(data.raw.tool[Item])
+	elseif data.raw.ammo[Item] then
+		GenerateRepliRecipeAndTech(data.raw.ammo[Item])
+	elseif data.raw.capsule[Item] then
+		GenerateRepliRecipeAndTech(data.raw.capsule[Item])
+	elseif data.raw["rail-planner"][Item] then
+		GenerateRepliRecipeAndTech(data.raw["rail-planner"][Item])
+	end
+end
 --Recipe and tech generation with everything else
 for i, Item in pairs(RepliItems) do
-	GenerateRepliRecipeAndTech(data.raw.item[Item], RepliItems, i)
+	if data.raw.item[Item] then
+		GenerateRepliRecipeAndTech(data.raw.item[Item])
+	elseif data.raw.fluid[Item] then
+		GenerateRepliRecipeAndTech(data.raw.fluid[Item])
+	elseif data.raw.module[Item] then
+		GenerateRepliRecipeAndTech(data.raw.module[Item])
+	elseif data.raw.tool[Item] then
+		GenerateRepliRecipeAndTech(data.raw.tool[Item])
+	elseif data.raw.ammo[Item] then
+		GenerateRepliRecipeAndTech(data.raw.ammo[Item])
+	elseif data.raw.capsule[Item] then
+		GenerateRepliRecipeAndTech(data.raw.capsule[Item])
+	elseif data.raw["rail-planner"][Item] then
+		GenerateRepliRecipeAndTech(data.raw["rail-planner"][Item])
+	end
 end
 --Now that all techs are generated, apply prereqs
 for i, Item in pairs(RepliItems) do
-	--ApplyRecipePrereqs(Item)
+	ApplyRecipePrereqs(Item)
 end
 
 LogAllItemValues()
