@@ -19,6 +19,7 @@ data:extend({
       type = "recipe",
       name = "dark-matter-scoop",
       enabled = "true",
+      energy_required = 2,
       ingredients = {
         {'tenemut', 4},
         {'iron-plate', 1}
@@ -59,6 +60,7 @@ data:extend({
       type = "recipe",
       name = "dark-matter-transducer",
       enabled = "false",
+      energy_required = 4,
       ingredients = {
         {'dark-matter-scoop', 4},
         {'steel-plate', 1}
@@ -100,6 +102,7 @@ data:extend({
       type = "recipe",
       name = "matter-conduit",
       enabled = "false",
+      energy_required = 8,
       ingredients = {
         {'dark-matter-transducer', 4},
         {'dark-matter-scoop', 1}

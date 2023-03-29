@@ -73,6 +73,6 @@ data:extend({
 			"matter-conduit"
 		},
 		module_specification = {module_slots = 2},
-		allowed_effects = {"consumption", "speed", "productivity"}
+		allowed_effects = {"consumption", "speed", "productivity", "pollution"}
 	}
 })

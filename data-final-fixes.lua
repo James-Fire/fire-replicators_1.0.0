@@ -1,1 +1,1 @@
-require('prototypes.Replication Generation')
+require("prototypes/Replication Generation")

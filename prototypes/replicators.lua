@@ -50,7 +50,7 @@ function make_replicator(tier, research_prerequisites, ingredients)
 	
 	--Create the list of recipe categories that this replicator can replicate
 	local categories = {}
-	for currentAndLowerTiers=1,tier do
+	for currentAndLowerTiers=0,tier do
 		categories[#categories+1] = 'replication-'..currentAndLowerTiers
 	end
 	

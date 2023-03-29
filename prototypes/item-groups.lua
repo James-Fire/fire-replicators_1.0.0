@@ -80,4 +80,8 @@ data:extend(
 		type = "recipe-category",
 		name = "replication-7"
 	},
+	{
+		type = "recipe-category",
+		name = "Matter-Converter"
+	},
 })

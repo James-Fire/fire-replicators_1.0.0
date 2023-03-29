@@ -1,9 +1,11 @@
 local stdlib = require('__stdlib__/stdlib/utils/string')
 
 local BaseMatterCost = 5 --How much matter is used to make 1 piece of ore  --settings.startup["tiberium-damage"].value
-local BaseTimeCost = 5 --How much time is used to make 1 piece of ore, also the tech research time.  --settings.startup["tiberium-damage"].value
-local TierTimeFactor = 1.2 --How much the time is increased per tier
+local AddedMatterCostDivisor = 2 --How much to divide ingredient values by. It's easier to make the final product directly?
+local BaseTimeCost = 2 --How much time is used to make 1 piece of ore, also the tech research time.  --settings.startup["tiberium-damage"].value
+local TierTimeFactor = 2 --How much the research time is increased per tier
 local ItemTimeFactor = 1.2 --How much the time is increased per unique ore used to make the product normally, unused right now
+local MaxTier = 7 --The max tier that we can generate. Anything above this is rounded down to this.
 
 local RepliOres = { }
 local RepliItems = { }
@@ -111,29 +113,72 @@ for i, Fluid in pairs(data.raw.fluid) do
 end
 
 local function RecipeStringMatch(RecipeName)
-	local StringTable = { }
-	--Use string matching to grab likely recipes
 	--log("String Match Recipe "..RecipeName)
 	if stdlib.contains(RecipeName, "barrel") or stdlib.contains(RecipeName, "canister") then
 		if stdlib.contains(RecipeName, "fill") or stdlib.contains(RecipeName, "empty") then
 			if RecipeName == "empty-barrel" then
 			else
-				--log("Found barrelling recipe "..RecipeName)
-				return true
+				if CheckTableValue(RecipeName,BadRecipeNameList) == false then
+					return true
+				end
 			end
 		end
 	end
-	if stdlib.contains(RecipeName, "cracking") then
+	if RecipeName:find("reforming", 1, true) or RecipeName:find("cracking", 1, true) then
 		--log("Found cracking recipe "..RecipeName)
-		return true
+		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
+			return true
+		end
 	end
-	if RecipeName:find("liquefaction") then
+	if RecipeName:find("liquefaction", 1, true) then
 		--log("Found liquefaction recipe "..RecipeName)
-		return true
+		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
+			return true
+		end
+	end
+	if RecipeName:find("scrap", 1, true) then
+		--log("Found scrap recipe "..RecipeName)
+		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
+			return true
+		end
+	end
+	if RecipeName:find("coolant", 1, true) and RecipeName:find("hot", 1, true) or RecipeName:find("cold", 1, true) then
+		--log("Found scrap recipe "..RecipeName)
+		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
+			return true
+		end
+	end
+	return false
+end
+local function ItemStringMatch(ItemName)
+	if ItemName:find("scrap", 1, true) or ItemName:find("person", 1, true) then
+		if CheckTableValue(ItemName,BadItemList) == false then
+			return true
+		end
+	end
+	if ItemName:find("joule", 1, true) or ItemName:find("interface", 1, true) or ItemName:find("infinity", 1, true) then
+		if CheckTableValue(ItemName,BadItemList) == false then
+			return true
+		end
+	end
+	if ItemName:find("recycle", 1, true) or ItemName:find("recycling", 1, true) then
+		if CheckTableValue(ItemName,BadItemList) == false then
+			return true
+		end
+	end
+	if ItemName:find("coolant", 1, true) and ItemName:find("hot", 1, true) or ItemName:find("cold", 1, true) then
+		if CheckTableValue(ItemName,BadItemList) == false then
+			return true
+		end
 	end
 	return false
 end
 
+for i, Item in pairs(data.raw.item) do
+	if ItemStringMatch(Item.name) then
+		table.insert(BadItemList, Item.name)
+	end
+end
 for i, Recipe in pairs(data.raw.recipe) do
 	local PotentialBadIngredients = { }
 	local PotentialBadResults = { }
@@ -145,9 +190,21 @@ for i, Recipe in pairs(data.raw.recipe) do
 	end
 	
 	--Use string matching to grab likely recipe categories
-	if stdlib.contains(Recipe.category, "deep") and stdlib.contains(Recipe.category, "mining") or stdlib.contains(Recipe.category, "mine") then
-		if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
-			table.insert(BadRecipeCategories, Recipe.category)
+	if Recipe.category then
+		if Recipe.category:find("deep", 1, true) and Recipe.category:find("mining", 1, true) or Recipe.category:find("mine", 1, true) then
+			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
+				table.insert(BadRecipeCategories, Recipe.category)
+			end
+		end
+		if Recipe.category:find("recycle", 1, true) or Recipe.category:find("recycling", 1, true) then
+			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
+				table.insert(BadRecipeCategories, Recipe.category)
+			end
+		end
+		if Recipe.category:find("person", 1, true) then
+			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
+				table.insert(BadRecipeCategories, Recipe.category)
+			end
 		end
 	end
 	if Recipe.normal then
@@ -195,7 +252,7 @@ for i, Recipe in pairs(data.raw.recipe) do
 end
 
 --log("Bad Recipe Table: "..serpent.block(BadRecipeList))
-log("Bad Recipe Name Table: "..serpent.block(BadRecipeNameList))
+--log("Bad Recipe Name Table: "..serpent.block(BadRecipeNameList))
 --log("Bad Category Table: "..serpent.block(BadRecipeCategories))
 --log("Bad Item Table: "..serpent.block(BadItemList))
 
@@ -215,30 +272,40 @@ end]]
 
 local function FindItemRecipe(Item)
 	local RecipeTable = { }
-	if data.raw.recipe[Item] and NotBannedRecipe(data.raw.recipe[Item]) == true then
-		table.insert(RecipeTable,data.raw.recipe[Item])
+	if data.raw.recipe[Item] then
+		if NotBannedRecipe(data.raw.recipe[Item]) == true then
+			if CheckTableValue(data.raw.recipe[Item],RecipeTable) == false then
+				table.insert(RecipeTable,data.raw.recipe[Item])
+			end
+		end
 	end
 	for i, recipe in pairs(data.raw.recipe) do
 		if NotBannedRecipe(recipe) == true then
-			if recipe.mainproduct == Item then
-				if CheckTableValue(recipe,RecipeTable) == false then
-					table.insert(RecipeTable,recipe)
-				end
-			elseif recipe.mainproduct == nil then
-				if recipe.results then
-					for i, result_data in pairs(recipe.results) do
-						if result_data.name == Item then
-							if CheckTableValue(recipe,RecipeTable) == false then
+			if CheckTableValue(recipe,RecipeTable) == false then
+				if recipe.main_product == Item then
+						table.insert(RecipeTable,recipe)
+				elseif recipe.main_product == nil then
+					if recipe.results then
+						for i, result_data in pairs(recipe.results) do
+							if (result_data.name or result_data[1]) == Item then
 								table.insert(RecipeTable,recipe)
 							end
 						end
-					end
-				elseif recipe.result then
-					if recipe.result.name == Item then
-						if CheckTableValue(recipe,RecipeTable) == false then
+					elseif recipe.result then
+						if recipe.result == Item then
 							table.insert(RecipeTable,recipe)
 						end
 					end
+				end
+			end
+		end
+	end
+	for i, r1 in pairs(RecipeTable) do
+		for j, r2 in pairs(RecipeTable) do
+			if i == j then
+			else
+				if r1 == r2 then
+					RecipeTable[j] = nil
 				end
 			end
 		end
@@ -254,14 +321,116 @@ local function CheckMasterTable(Item, ReturnValue) --1 returns the item string, 
 	end
 end
 
+local function addMatterRecipe(ore)
+	local recipeName = ore.."-to-liquid-matter"
+	local oreAmount = 1
+	local itemOrFluid = data.raw.fluid[ore] and "fluid" or "item"
+	local energy = 2.5
+	local order = 1
+	
+	LSlib.recipe.create(recipeName)
+	if ore == "fluid" then
+		LSlib.recipe.addIngredient(recipeName, ore, 25, itemOrFluid)
+	else
+		LSlib.recipe.addIngredient(recipeName, ore, oreAmount, itemOrFluid)
+	end
+	LSlib.recipe.addResult(recipeName, "eridium", 1, "fluid")
+	LSlib.recipe.setMainResult(recipeName, "eridium")
+	LSlib.recipe.setEngergyRequired(recipeName, energy)
+	LSlib.recipe.setOrderstring(recipeName, order)
+	LSlib.recipe.enable(recipeName)
+	LSlib.recipe.setSubgroup(recipeName, "replication-resources")
+	LSlib.recipe.setShowMadeIn(recipeName, true)
+	data.raw.recipe[recipeName].category = "Matter-Converter"
+end
+
+local function MatterConverterIngredients(tier, NumTiers)
+	local DMItem = { {"assembling-machine-"..tostring(tier),1} }
+	if (tier) > 1 then
+		table.insert(DMItem,{"Matter-Converter-"..tostring(tier-1),1})
+	end
+	
+	table.insert(DMItem,{ "dark-matter-scoop", tier })
+	if (tier/NumTiers) > 0.25 then
+		table.insert(DMItem,{ "dark-matter-transducer", round(tier/2) })
+	end
+	if (tier/NumTiers) > 0.5 then
+		table.insert(DMItem,{ "matter-conduit", round(tier/4) })
+	end
+	if (tier/NumTiers) > 0.75 then
+		DMItem[3][2] = tier*2
+		DMItem[4][2] = tier
+	end
+	if tier == NumTiers then
+		DMItem[5][2] = tier/2
+	end
+	return DMItem
+end
+local function addMatterConverter(tier, NumTiers)
+	local Matter_converter = table.deepcopy(data.raw["furnace"]["electric-furnace"])
+	Matter_converter.name = "Matter-Converter-"..tostring(tier)
+	Matter_converter.energy_usage = tostring((2*tier)).."MW"
+	Matter_converter.energy_source.emissions_per_minute = 2*tier
+	Matter_converter.crafting_speed = tier
+	Matter_converter.minable.result = "Matter-Converter-"..tostring(tier)
+	Matter_converter.fluid_boxes =
+    {
+      {
+        production_type = "input",
+        pipe_picture = assembler3pipepictures(),
+        pipe_covers = pipecoverspictures(),
+        base_area = 10,
+        base_level = -1,
+        pipe_connections = {{ type="input", position = {0, -2} }},
+        secondary_draw_orders = { north = -1 }
+      },
+      {
+        production_type = "output",
+        pipe_picture = assembler3pipepictures(),
+        pipe_covers = pipecoverspictures(),
+        base_area = 10,
+        base_level = 1,
+        pipe_connections = {{ type="output", position = {0, 2} }},
+        secondary_draw_orders = { north = -1 }
+      },
+      off_when_no_fluid_recipe = false
+    }
+	Matter_converter.crafting_categories = {"Matter-Converter"}
+	Matter_converter.allowed_effects = {"speed", "consumption", "pollution"}
+	Matter_converter.module_specification = {
+		module_slots = tier
+	}
+	data:extend({Matter_converter})
+	data:extend({
+		{
+			type = "item",
+			name = "Matter-Converter-"..tostring(tier),
+			icon = "__base__/graphics/icons/assembling-machine-3.png",
+			icon_size = 64,
+			subgroup = "replicators",
+			place_result = "Matter-Converter-"..tostring(tier),
+			order = "q",
+			stack_size = 20
+		},
+		{
+			type = "recipe",
+			name = "Matter-Converter-"..tostring(tier),
+			enabled = true,
+			energy_required = 3*tier,
+			ingredients = MatterConverterIngredients(tier, NumTiers),
+			results = {{"Matter-Converter-"..tostring(tier),1}},
+		},
+	})
+	
+	log("Matter Converter "..tier..": "..serpent.block(Matter_converter))
+	log("Matter Converter "..tier.." Recipe: "..serpent.block(data.raw.recipe["Matter-Converter-"..tostring(tier)]))
+	log("Matter Converter "..tier.." Item: "..serpent.block(data.raw.item["Matter-Converter-"..tostring(tier)]))
+end
 
 --Basically just determine how many steps from ore the item is by following its ingredients. Look for the shortest appearance of ore.
 --Make sure to save it somewhere so we aren't repeating this, cause this is expensive.
-local function GetRecipeIngredientBreakdown(Item, PrevRecipe, PrevPrevRecipe, PrevPrevPrevRecipe)
+local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 	local Recipe = FindItemRecipe(Item)[1]
-	local PreviousRecipe = PrevRecipe or nil
-	local PreviousPreviousRecipe = PrevPrevRecipe or nil
-	local PreviousPreviousPreviousRecipe = PrevPrevPrevRecipe or nil
 	if Recipe then --Check if the recipe exists, cause it might not for whatever reason
 		--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
 		local ItemTier = 0 --Item tier determines some multiplicative stuff.
@@ -274,9 +443,10 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipe, PrevPrevRecipe, Pr
 		else
 			recipe_data = Recipe
 		end
-		--log("Recipe ingredients table for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
 		log(Recipe.name.." started")
 		if recipe_data.ingredients then
+			table.insert(PrevRecipeTable,Recipe)
+			log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
 			local resultcount = 1
 			local ingreditentstable = { }
 			if recipe_data.results then
@@ -285,6 +455,9 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipe, PrevPrevRecipe, Pr
 						resultcount = resultcount + result.count
 					elseif result.amount then
 						resultcount = resultcount + result.amount
+					end
+					if result.probability then
+						resultcount = resultcount*result.probability
 					end
 				end
 			elseif recipe_data.result then
@@ -307,17 +480,20 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipe, PrevPrevRecipe, Pr
 				else
 					ingredientcount = ingredient[2]
 				end
+				if ingredient.probability then
+					ingredientcount = ingredientcount*ingredient.probability
+				end
 				table.insert(ingreditentstable,ingredientindex)
 				--log(ingredientindex.." for "..Recipe.name)
 				if CheckMasterTable(ingredientindex, 1) then
 					--log(ingredientindex.." present on masterlist")
 					ItemTier = ItemTier + CheckMasterTable(ingredientindex, 2)
-					IngredientsValue = IngredientsValue + ingredientcount*CheckMasterTable(ingredientindex, 3)
+					IngredientsValue = IngredientsValue + ingredientcount/AddedMatterCostDivisor*CheckMasterTable(ingredientindex, 3)
 				elseif CheckTableValue(ingredientindex,RepliOres) == true then
 					--log(ingredientindex.." not present on masterlist, and is ore")
 					FoundOre = true
 					ItemTier = CheckMasterTable(ingredientindex, 2) + 1
-					IngredientsValue = IngredientsValue + ingredientcount
+					IngredientsValue = IngredientsValue + ingredientcount/AddedMatterCostDivisor
 				else
 					--log(ingredientindex.." not present on masterlist, and isn't ore")
 					local IngredRecipe = FindItemRecipe(ingredientindex)
@@ -329,15 +505,15 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipe, PrevPrevRecipe, Pr
 					local ValidRecipe = false
 					for j, ingredientrecipe in pairs(IngredRecipe) do
 						if ingredientrecipe and ValidRecipe == false then
-							if PreviousRecipe == ingredientrecipe or PreviousPreviousRecipe == ingredientrecipe or PreviousPreviousPreviousRecipe == ingredientrecipe then
-								log("Recipe Loop, aborting")
-							else
-								local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, Recipe, PreviousRecipe, PreviousPreviousRecipe)
+							if CheckTableValue(ingredientrecipe,PrevRecipeTable) == false then
+								local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
 								if FoundOre == false and i == 1 then
 									ItemTier = ItemTier + ReplicationValues[2]
 								end
-								IngredientsValue = IngredientsValue + ReplicationValues[3]
+								IngredientsValue = IngredientsValue + ReplicationValues[3]/AddedMatterCostDivisor
 								ValidRecipe = true
+							else
+								log("Recipe Loop, aborting")
 							end
 						else
 							--log(ingredientindex.." has no recipe to make it")
@@ -364,7 +540,7 @@ local function LogAllItemValues()
 end
 
 local function GetReplicationTier(Item)
-	local ReplicationTier = math.min(CheckMasterTable(Item, 2),7)
+	local ReplicationTier = math.min(CheckMasterTable(Item, 2), MaxTier)
 	return ReplicationTier
 end
 
@@ -412,7 +588,7 @@ local function GenerateRepliRecipeAndTech(Item)
 		end
 		--log("Replication Value for "..Item.name..": "..tostring(CheckMasterTable(Item.name, 3)))
 		--log("Tech cost for "..Item.name..": "..tostring(round(CheckMasterTable(Item.name, 3)/4)))
-		log("Icon String for "..Item.name..": "..ItemIcon)
+		--log("Icon String for "..Item.name..": "..ItemIcon)
 		data:extend({
 			{
 				type = "recipe",
@@ -425,15 +601,15 @@ local function GenerateRepliRecipeAndTech(Item)
 					{
 						icon = "__fire-replicators__/graphics/icons/borders/"..GetItemBorder(Item.name)..".png",
 						icon_size = 32,
-						scale = ItemIconSize/64,
+						scale = ItemIconSize/32,
 						shift = {0, 0},
 					},
 				},
 				category = "replication-"..tostring(GetReplicationTier(Item.name)),
 				enabled = false,
-				energy_required = BaseTimeCost*TierTimeFactor^CheckMasterTable(Item.name, 2),
+				energy_required = BaseTimeCost*TierTimeFactor^GetReplicationTier(Item.name),
 				ingredients = {
-					{type = "fluid", name = "eridium", amount = BaseMatterCost*CheckMasterTable(Item.name, 3) },
+					{type = "fluid", name = "eridium", amount = round(BaseMatterCost*CheckMasterTable(Item.name, 3)) },
 				},
 				results = {
 					{ name = Item.name, amount = 1, type = ItemType },
@@ -464,11 +640,11 @@ local function GenerateRepliRecipeAndTech(Item)
 					},
 				},
 				unit = {
-					count = math.abs(round(CheckMasterTable(Item.name, 3)/4)),
+					count = math.max(round(CheckMasterTable(Item.name, 3)),10),
 					ingredients = {
 						{"tenemut", 4},
 					},
-					time = BaseTimeCost*TierTimeFactor^CheckMasterTable(Item.name, 2),
+					time = round(BaseTimeCost*TierTimeFactor^GetReplicationTier(Item.name)),
 				},
 				order = "a",
 			},
@@ -483,14 +659,14 @@ local function GenerateRepliRecipeAndTech(Item)
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-2", "replication-3")
 		end
 		if CheckMasterTable(Item.name, 2) > 5 then
+			LSlib.technology.removeIngredient(Item.name.."-replication-research", "tenemut")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "matter-conduit")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-3", "replication-4")
 		end
-		if CheckMasterTable(Item.name, 2) > 7 then
-			LSlib.technology.removeIngredient(Item.name.."-replication-research", "tenemut")
-			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-scoop")
-			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "dark-matter-transducer")
-			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "matter-conduit")
+		if CheckMasterTable(Item.name, 2) > MaxTier then
+			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "dark-matter-scoop")
+			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "dark-matter-transducer")
+			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "matter-conduit")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-4", "replication-5")
 		end
 		--log("Recipe: "..serpent.block(Item.name.."-replication").."  Tech: "..serpent.block(Item.name.."-replication-research"))
@@ -512,55 +688,18 @@ local function ApplyRecipePrereqs(Item)
 end
 
 --Start by documenting all items, fluids, modules, and tools, and ensuring there's a recipe that makes it. Or if it's a resource.
-for i, Item in pairs(data.raw.item) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw.fluid) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw.module) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw.tool) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw.ammo) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw.capsule) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw.armor) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw.gun) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
-	end
-end
-for i, Item in pairs(data.raw["rail-planner"]) do
-	if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
-		table.insert(RepliItems,Item.name)
+local Items = { "item", "fluid", "module", "tool", "ammo", "capsule", "armor", "gun", "rail-planner" }
+for i, ItemType in pairs(Items) do
+	for j, Item in pairs(data.raw[ItemType]) do
+		if CheckRecipeResultTableValue(Item.name) == true and CheckTableValue(Item.name, BadItemList) == false then
+			table.insert(RepliItems,Item.name)
+		end
 	end
 end
 
 for _, resourceData in pairs(data.raw.resource) do
-	--Exclude infinite mining stuff.
-	if resourceData.category and stdlib.contains(resourceData.category, "deep") and stdlib.contains(resourceData.category, "mining") or stdlib.contains(resourceData.category, "mine") then
+	--Exclude infinite mining stuff.RecipeName:"liquefaction")
+	if resourceData.category and (resourceData.category:find("deep", 1, true) or resourceData.category:find("core", 1, true)) and (resourceData.category:find("mining", 1, true) or resourceData.category:find("mine", 1, true)) then
 
 	elseif resourceData.autoplace and resourceData.minable then
 		table.insert(RepliOres,resourceData.minable.result)
@@ -583,22 +722,48 @@ if CheckTableValue("wood",RepliOres) == false then
 	end
 end
 --Insert water manually, if it's not already there
-if CheckTableValue("water",RepliTableTable) == false then
-	if CheckTableValue("water",RepliItems) == false then
-		table.insert(RepliOres, "water")
+if CheckTableValue("water",RepliOres) == false then
+	table.insert(RepliOres, "water")
+	if CheckTableValue("water",RepliItems) == true then
+		for _, result in pairs(RepliItems) do
+			if result == "water" then
+				table.remove(RepliItems,_)
+			end
+		end
+	end
+end
+--Make sure no ores are in the item table
+for i, Item in pairs(RepliItems) do
+	if CheckTableValue(Item,RepliOres) == true then
+		RepliItems[i] = nil
 	end
 end
 log("Items Table: "..serpent.block(RepliItems))
 log("Ores Table: "..serpent.block(RepliOres))
 
+--Create matter converters, and replicators
+local AssemMach = { }
+for i, Item in pairs(data.raw.item) do
+	if Item.name:find("assembling", 1, true) and Item.name:find("machine", 1, true) then
+		table.insert(AssemMach, Item.name)
+	end
+end
+
+for i, Item in pairs(AssemMach) do
+	addMatterConverter(i, table_size(AssemMach) )
+end
 
 --Start recipe generation with ores
 for i, Item in pairs(RepliOres) do
 	table.insert(RepliTableTable,{ Item, 0, 1 })
 end
+for i, Item in pairs(RepliOres) do
+	addMatterRecipe(Item)
+end
 --Calculate item values
 for i, Item in pairs(RepliItems) do
-	GetRecipeIngredientBreakdown(Item)
+	local PrevRecipeTable = { }
+	GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 end
 --Recipe and tech generation with ores
 for i, Item in pairs(RepliOres) do
