@@ -130,7 +130,7 @@ local function RecipeStringMatch(RecipeName)
 			return true
 		end
 	end
-	if RecipeName:find("liquefaction", 1, true) then
+	if RecipeName:find("liquefaction", 1, true) or RecipeName:find("request", 1, true) then
 		--log("Found liquefaction recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
@@ -177,6 +177,11 @@ end
 for i, Item in pairs(data.raw.item) do
 	if ItemStringMatch(Item.name) then
 		table.insert(BadItemList, Item.name)
+	end
+end
+for i, Fluid in pairs(data.raw.fluid) do
+	if ItemStringMatch(Fluid.name) then
+		table.insert(BadItemList, Fluid.name)
 	end
 end
 for i, Recipe in pairs(data.raw.recipe) do
@@ -334,9 +339,9 @@ local function addMatterRecipe(ore)
 	else
 		LSlib.recipe.addIngredient(recipeName, ore, oreAmount, itemOrFluid)
 	end
-	LSlib.recipe.addResult(recipeName, "eridium", 1, "fluid")
+	LSlib.recipe.addResult(recipeName, "eridium", BaseMatterCost, "fluid")
 	LSlib.recipe.setMainResult(recipeName, "eridium")
-	LSlib.recipe.setEngergyRequired(recipeName, energy)
+	LSlib.recipe.setEnergyRequired(recipeName, energy)
 	LSlib.recipe.setOrderstring(recipeName, order)
 	LSlib.recipe.enable(recipeName)
 	LSlib.recipe.setSubgroup(recipeName, "replication-resources")
@@ -422,9 +427,9 @@ local function addMatterConverter(tier, NumTiers)
 		},
 	})
 	
-	log("Matter Converter "..tier..": "..serpent.block(Matter_converter))
-	log("Matter Converter "..tier.." Recipe: "..serpent.block(data.raw.recipe["Matter-Converter-"..tostring(tier)]))
-	log("Matter Converter "..tier.." Item: "..serpent.block(data.raw.item["Matter-Converter-"..tostring(tier)]))
+	--log("Matter Converter "..tier..": "..serpent.block(Matter_converter))
+	--log("Matter Converter "..tier.." Recipe: "..serpent.block(data.raw.recipe["Matter-Converter-"..tostring(tier)]))
+	--log("Matter Converter "..tier.." Item: "..serpent.block(data.raw.item["Matter-Converter-"..tostring(tier)]))
 end
 
 --Basically just determine how many steps from ore the item is by following its ingredients. Look for the shortest appearance of ore.
@@ -504,6 +509,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 					log("All recipes that make "..ingredientindex..serpent.block(IngredRecipeName))
 					local ValidRecipe = false
 					for j, ingredientrecipe in pairs(IngredRecipe) do
+						log(ingredientrecipe.name.." ingredient for "..Item)
 						if ingredientrecipe and ValidRecipe == false then
 							if CheckTableValue(ingredientrecipe,PrevRecipeTable) == false then
 								local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
@@ -524,6 +530,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 			end
 			--log("Recipe ingredients name table for "..Recipe.name.." "..serpent.block(ingreditentstable))
 			log(Recipe.name.." completed")
+			log(Item.." matter cost: "..(IngredientsValue/resultcount))
 			if CheckTableValue( Item,RepliTableTable,1 ) == false then
 				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingreditentstable })
 			end
@@ -536,7 +543,9 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 end
 
 local function LogAllItemValues()
-	log("Master Table: "..serpent.block(RepliTableTable))
+	for _, entry in pairs(RepliTableTable) do
+		log("Master Table: "..serpent.line(entry))
+	end
 end
 
 local function GetReplicationTier(Item)
@@ -601,7 +610,7 @@ local function GenerateRepliRecipeAndTech(Item)
 					{
 						icon = "__fire-replicators__/graphics/icons/borders/"..GetItemBorder(Item.name)..".png",
 						icon_size = 32,
-						scale = ItemIconSize/32,
+						scale = (ItemIconSize/32),
 						shift = {0, 0},
 					},
 				},
@@ -640,7 +649,7 @@ local function GenerateRepliRecipeAndTech(Item)
 					},
 				},
 				unit = {
-					count = math.max(round(CheckMasterTable(Item.name, 3)),10),
+					count = math.min(math.max(round(CheckMasterTable(Item.name, 3)),10),18446744073709551615),
 					ingredients = {
 						{"tenemut", 4},
 					},

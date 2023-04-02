@@ -192,7 +192,7 @@ function make_replicator(tier, research_prerequisites, ingredients)
 			{
 				type = "electric",
 				usage_priority = "secondary-input",
-				emissions = pollution_base * pollution_factor^(tier-1) / power_consumption
+				emissions_per_minute = pollution_base * pollution_factor^(tier-1) / power_consumption
 			},
 			energy_usage = power_consumption .. "kW",
 			ingredient_count = 1, --Haha no ingredients
