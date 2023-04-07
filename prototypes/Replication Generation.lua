@@ -333,6 +333,11 @@ local function addMatterRecipe(ore)
 	local energy = 2.5
 	local order = 1
 	
+	if ore:find("water", 1, true) then
+		oreAmount = 5
+		energy = 5
+	end
+	
 	LSlib.recipe.create(recipeName)
 	if ore == "fluid" then
 		LSlib.recipe.addIngredient(recipeName, ore, 25, itemOrFluid)
@@ -448,10 +453,11 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		else
 			recipe_data = Recipe
 		end
-		log(Recipe.name.." started")
+		--log(Recipe.name.." started")
+		--log("Previous Recipes:"..serpent.block(PrevRecipeTable))
 		if recipe_data.ingredients then
-			table.insert(PrevRecipeTable,Recipe)
-			log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
+			table.insert(PrevRecipeTable,Recipe.name)
+			--log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
 			local resultcount = 1
 			local ingreditentstable = { }
 			if recipe_data.results then
@@ -506,31 +512,33 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 					for j, ingredientrecipe in pairs(IngredRecipe) do
 						table.insert(IngredRecipeName,ingredientrecipe.name)
 					end
-					log("All recipes that make "..ingredientindex..serpent.block(IngredRecipeName))
-					local ValidRecipe = false
+					--log("All recipes that make "..ingredientindex..serpent.block(IngredRecipeName))
+					local FoundRecipe = false
 					for j, ingredientrecipe in pairs(IngredRecipe) do
-						log(ingredientrecipe.name.." ingredient for "..Item)
-						if ingredientrecipe and ValidRecipe == false then
-							if CheckTableValue(ingredientrecipe,PrevRecipeTable) == false then
+						if ingredientrecipe and FoundRecipe == false then
+							--log(ingredientrecipe.name.." ingredient for "..Item)
+							if CheckTableValue(ingredientrecipe.name,PrevRecipeTable) == false then
 								local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
 								if FoundOre == false and i == 1 then
 									ItemTier = ItemTier + ReplicationValues[2]
 								end
 								IngredientsValue = IngredientsValue + ReplicationValues[3]/AddedMatterCostDivisor
-								ValidRecipe = true
+								FoundRecipe = true
 							else
-								log("Recipe Loop, aborting")
+								--log("Recipe Loop, aborting")
 							end
 						else
-							--log(ingredientindex.." has no recipe to make it")
-							IngredientsValue = IngredientsValue*2 --For now
 						end
+					end
+					if FoundRecipe == false then
+						--log(ingredientindex.." has no recipe to make it")
+						IngredientsValue = IngredientsValue*2 --For now
 					end
 				end
 			end
 			--log("Recipe ingredients name table for "..Recipe.name.." "..serpent.block(ingreditentstable))
-			log(Recipe.name.." completed")
-			log(Item.." matter cost: "..(IngredientsValue/resultcount))
+			--log(Recipe.name.." completed")
+			--log(Item.." matter cost: "..(IngredientsValue/resultcount))
 			if CheckTableValue( Item,RepliTableTable,1 ) == false then
 				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingreditentstable })
 			end
@@ -562,7 +570,7 @@ local function GetTechBorder(Item)
 end
 
 local function GenerateRepliRecipeAndTech(Item)
-	log("Generate recipe and tech for "..Item.name)
+	--log("Generate recipe and tech for "..Item.name)
 	if CheckMasterTable(Item.name, 1) == Item.name then
 		table.insert(ProcessedRepliItems, Item) --Place the item in the "finished" table, so it's easier to keep track of what's been processed.
 		local ItemType = nil
@@ -679,7 +687,7 @@ local function GenerateRepliRecipeAndTech(Item)
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-4", "replication-5")
 		end
 		--log("Recipe: "..serpent.block(Item.name.."-replication").."  Tech: "..serpent.block(Item.name.."-replication-research"))
-		log("Generate recipe and tech completed for "..Item.name)
+		--log("Generate recipe and tech completed for "..Item.name)
 	end
 end
 
