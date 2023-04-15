@@ -1,11 +1,13 @@
 local stdlib = require('__stdlib__/stdlib/utils/string')
 
 local BaseMatterCost = 5 --How much matter is used to make 1 piece of ore  --settings.startup["tiberium-damage"].value
-local AddedMatterCostDivisor = 2 --How much to divide ingredient values by. It's easier to make the final product directly?
+local AddedMatterCostDivisor = 1.5 --How much to divide ingredient values by. It's easier to make the final product directly?
 local BaseTimeCost = 2 --How much time is used to make 1 piece of ore, also the tech research time.  --settings.startup["tiberium-damage"].value
 local TierTimeFactor = 2 --How much the research time is increased per tier
 local ItemTimeFactor = 1.2 --How much the time is increased per unique ore used to make the product normally, unused right now
-local MaxTier = 7 --The max tier that we can generate. Anything above this is rounded down to this.
+local MaxTier = 5 --The max tier that we can generate. Anything above this is rounded down to this.
+local TierDivisor = 1 --How many tiers of items are in each tier band
+local TierBands = { 1, 2, 3, 4, 5 }
 
 local RepliOres = { }
 local RepliItems = { }
@@ -318,7 +320,7 @@ local function FindItemRecipe(Item)
 	return RecipeTable
 end
 
-local function CheckMasterTable(Item, ReturnValue) --1 returns the item string, 2 returns the tier integer, 3 returns the value integer, 4 returns the prereq table
+local function CheckMasterTable(Item, ReturnValue) --1 returns the item string, 2 returns the tier integer, 3 returns the value integer, 4 returns the prereq table, 5 returns the unlock tech
 	for i, entry in pairs(RepliTableTable) do
 		if Item == entry[1] then
 			return entry[ReturnValue]
@@ -468,7 +470,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 						resultcount = resultcount + result.amount
 					end
 					if result.probability then
-						resultcount = resultcount*result.probability
+						--resultcount = resultcount/result.probability
 					end
 				end
 			elseif recipe_data.result then
@@ -492,7 +494,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 					ingredientcount = ingredient[2]
 				end
 				if ingredient.probability then
-					ingredientcount = ingredientcount*ingredient.probability
+					--ingredientcount = ingredientcount*ingredient/probability
 				end
 				table.insert(ingreditentstable,ingredientindex)
 				--log(ingredientindex.." for "..Recipe.name)
@@ -557,7 +559,18 @@ local function LogAllItemValues()
 end
 
 local function GetReplicationTier(Item)
-	local ReplicationTier = math.min(CheckMasterTable(Item, 2), MaxTier)
+	local ReplicationTier = CheckMasterTable(Item, 2)
+	if ReplicationTier <= TierBands[1] then
+		ReplicationTier = 1
+	elseif ReplicationTier <= TierBands[2] then
+		ReplicationTier = 2
+	elseif ReplicationTier <= TierBands[3] then
+		ReplicationTier = 3
+	elseif ReplicationTier <= TierBands[4] then
+		ReplicationTier = 4
+	else
+		ReplicationTier = 5
+	end
 	return ReplicationTier
 end
 
@@ -657,30 +670,30 @@ local function GenerateRepliRecipeAndTech(Item)
 					},
 				},
 				unit = {
-					count = math.min(math.max(round(CheckMasterTable(Item.name, 3)),10),18446744073709551615),
+					count = GetReplicationTier(Item.name)*10,
 					ingredients = {
 						{"tenemut", 4},
 					},
-					time = round(BaseTimeCost*TierTimeFactor^GetReplicationTier(Item.name)),
+					time = round(BaseTimeCost*TierTimeFactor^GetReplicationTier(Item.name))*GetReplicationTier(Item.name),
 				},
 				order = "a",
 			},
 		})
 		LSlib.technology.addPrerequisite(Item.name.."-replication-research", "replication-1")
-		if CheckMasterTable(Item.name, 2) > 1 then
+		if CheckMasterTable(Item.name, 2) > TierBands[1] then
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 3, "dark-matter-scoop")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-1", "replication-2")
 		end
-		if CheckMasterTable(Item.name, 2) > 3 then
+		if CheckMasterTable(Item.name, 2) > TierBands[2] then
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "dark-matter-transducer")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-2", "replication-3")
 		end
-		if CheckMasterTable(Item.name, 2) > 5 then
+		if CheckMasterTable(Item.name, 2) > TierBands[3] then
 			LSlib.technology.removeIngredient(Item.name.."-replication-research", "tenemut")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 1, "matter-conduit")
 			LSlib.technology.movePrerequisite(Item.name.."-replication-research", "replication-3", "replication-4")
 		end
-		if CheckMasterTable(Item.name, 2) > MaxTier then
+		if CheckMasterTable(Item.name, 2) > TierBands[4] then
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "dark-matter-scoop")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "dark-matter-transducer")
 			LSlib.technology.addIngredient(Item.name.."-replication-research", 2, "matter-conduit")
@@ -715,7 +728,7 @@ for i, ItemType in pairs(Items) do
 end
 
 for _, resourceData in pairs(data.raw.resource) do
-	--Exclude infinite mining stuff.RecipeName:"liquefaction")
+	--Exclude infinite mining stuff. RecipeName:"liquefaction")
 	if resourceData.category and (resourceData.category:find("deep", 1, true) or resourceData.category:find("core", 1, true)) and (resourceData.category:find("mining", 1, true) or resourceData.category:find("mine", 1, true)) then
 
 	elseif resourceData.autoplace and resourceData.minable then
@@ -769,6 +782,7 @@ end
 for i, Item in pairs(AssemMach) do
 	addMatterConverter(i, table_size(AssemMach) )
 end
+--log("Matter Converters Completed")
 
 --Start recipe generation with ores
 for i, Item in pairs(RepliOres) do
@@ -777,11 +791,95 @@ end
 for i, Item in pairs(RepliOres) do
 	addMatterRecipe(Item)
 end
+--log("Matter Conversion Recipes Completed")
 --Calculate item values
 for i, Item in pairs(RepliItems) do
 	local PrevRecipeTable = { }
 	GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 end
+--log("Item cost breakdown completed")
+
+--After calculating stuff, extract all the tier values
+local function Mean(Table)
+	local MeanValue = 0
+	for i, entry in pairs(Table) do
+		MeanValue = MeanValue + entry
+	end
+	MeanValue = MeanValue/table_size(Table)
+	return MeanValue
+end
+local function Median(Table)
+	local MedianIndex = round(table_size(Table)/2)
+	return Table[MedianIndex]
+end
+
+local HighestTier = { 0 }
+local CalculatedTier = MaxTier
+local TierCount = { 0, 0, 0, 0, 0 } --Count how many recipes we find for each tier band
+local TierTable = { } --Count how many recipes we find for each tier band
+log("Tier calculation variables declared")
+for i, entry in pairs(RepliTableTable) do
+	table.insert(TierTable, entry[2])
+	if entry[2] > HighestTier[1] then
+		table.insert(HighestTier, 1, entry[2])
+	--[[elseif CheckTableValue(entry[2],HighestTier) == false then
+		for j, TierEntry in pairs(HighestTier) do
+			if entry[2] > TierEntry then
+				table.insert(HighestTier, j+1, entry[2])
+				break
+			end
+		end]]
+	end
+end
+log("Item tiers extracted and sorted")
+--log("Highest Tiers:")
+--for _, entry in pairs(HighestTier) do
+--	log(serpent.line(entry))
+--end
+--log("Highest Tiers Mean:"..serpent.line(Mean(HighestTier)))
+--log("Highest Tiers Median:"..serpent.line(Median(HighestTier)))
+--log("All recipe tier Mean:"..serpent.line(Mean(TierTable)))
+--log("All recipe tier Median:"..serpent.line(Median(TierTable)))
+
+--Prune the highest tier if it's too high
+for i, Tier in pairs(HighestTier) do
+	if Tier > (2*Median(TierTable)) then
+		log("Tier "..Tier.." is more than 2x higher than "..tostring(Median(HighestTier))..", tossing")
+	else
+		log("Tier "..Tier.." is not too high, continuing")
+		CalculatedTier = Tier
+		break
+	end
+end
+
+--Calculate stuff so that the top tier bands aren't extremely sparsely populated
+TierDivisor = round(CalculatedTier/MaxTier)
+TierBands[1] = TierDivisor
+TierBands[2] = TierDivisor*2
+TierBands[3] = TierDivisor*3
+TierBands[4] = TierDivisor*4
+TierBands[5] = TierDivisor*5
+
+for i, entry in pairs(TierTable) do
+	if entry <= TierBands[1] then
+		TierCount[1] = TierCount[1] + 1
+	elseif entry <= TierBands[2] then
+		TierCount[2] = TierCount[2] + 1
+	elseif entry <= TierBands[3] then
+		TierCount[3] = TierCount[3] + 1
+	elseif entry <= TierBands[4] then
+		TierCount[4] = TierCount[4] + 1
+	else
+		TierCount[5] = TierCount[5] + 1
+	end
+end
+
+log("Tier Band Width: "..tostring(TierDivisor))
+log("Highest non-outlier Tier: "..tostring(CalculatedTier))
+log("Calculated tier bands: "..serpent.block(TierBands))
+log("Tier band recipe count: "..serpent.block(TierCount))
+
+
 --Recipe and tech generation with ores
 for i, Item in pairs(RepliOres) do
 	if data.raw.item[Item] then
