@@ -17,7 +17,7 @@ local BadItemList = { "loader", "fast-loader", "express-loader", "rocket-part", 
 local BadRecipePreList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe" }
 local BadRecipeList = { }
 local BadRecipeNameList = { }
-local BadRecipeCategories = { }
+local BadRecipeCategories = { "forcefield-crafter" }
 
 local function round(num, numDecimalPlaces)
 	local mult = 10^(numDecimalPlaces or 0)

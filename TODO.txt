@@ -1,0 +1,8 @@
+RepliTechs need to have prereqs on the actual item tech
+Optimization?
+Settings?
+Loc
+Art
+Remove STDLib
+Include support for rocket launch products?
+Include detection for recipes that use rocket launch products, either to exclude them or to calculate their worth correctly
