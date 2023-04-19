@@ -339,6 +339,11 @@ local function addMatterRecipe(ore)
 		oreAmount = 5
 		energy = 5
 	end
+	if ore:find("eridium", 1, true) then
+		recipeName = "regenerative-matter"
+		oreAmount = 4
+		energy = 2
+	end
 	
 	LSlib.recipe.create(recipeName)
 	if ore == "fluid" then
@@ -382,7 +387,7 @@ local function addMatterConverter(tier, NumTiers)
 	local Matter_converter = table.deepcopy(data.raw["furnace"]["electric-furnace"])
 	Matter_converter.name = "Matter-Converter-"..tostring(tier)
 	Matter_converter.energy_usage = tostring((2*tier)).."MW"
-	Matter_converter.energy_source.emissions_per_minute = 2*tier
+	Matter_converter.energy_source.emissions_per_minute = 0
 	Matter_converter.crafting_speed = tier
 	Matter_converter.minable.result = "Matter-Converter-"..tostring(tier)
 	Matter_converter.fluid_boxes =
@@ -468,9 +473,6 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 						resultcount = resultcount + result.count
 					elseif result.amount then
 						resultcount = resultcount + result.amount
-					end
-					if result.probability then
-						--resultcount = resultcount/result.probability
 					end
 				end
 			elseif recipe_data.result then
@@ -582,6 +584,21 @@ local function GetTechBorder(Item)
 	return "tech-repl-"..GetReplicationTier(Item)
 end
 
+local function GetBorderSizeScale(IconSize)
+	if IconSize == 64 then
+		return 2
+	end
+	if IconSize == 32 then
+		return 1
+	end
+	if IconSize == 16 then
+		return 1/2
+	end
+	if IconSize == 1 then
+		return 1/32
+	end
+end
+
 local function GenerateRepliRecipeAndTech(Item)
 	--log("Generate recipe and tech for "..Item.name)
 	if CheckMasterTable(Item.name, 1) == Item.name then
@@ -631,13 +648,13 @@ local function GenerateRepliRecipeAndTech(Item)
 					{
 						icon = "__fire-replicators__/graphics/icons/borders/"..GetItemBorder(Item.name)..".png",
 						icon_size = 32,
-						scale = (ItemIconSize/32),
+						scale = GetBorderSizeScale(ItemIconSize),
 						shift = {0, 0},
 					},
 				},
 				category = "replication-"..tostring(GetReplicationTier(Item.name)),
 				enabled = false,
-				energy_required = BaseTimeCost*TierTimeFactor^GetReplicationTier(Item.name),
+				energy_required = BaseTimeCost*TierTimeFactor^CheckMasterTable(Item.name, 2),
 				ingredients = {
 					{type = "fluid", name = "eridium", amount = round(BaseMatterCost*CheckMasterTable(Item.name, 3)) },
 				},
@@ -791,6 +808,7 @@ end
 for i, Item in pairs(RepliOres) do
 	addMatterRecipe(Item)
 end
+addMatterRecipe("eridium")
 --log("Matter Conversion Recipes Completed")
 --Calculate item values
 for i, Item in pairs(RepliItems) do
