@@ -396,7 +396,7 @@ local function addMatterConverter(tier, NumTiers)
         production_type = "input",
         pipe_picture = assembler3pipepictures(),
         pipe_covers = pipecoverspictures(),
-        base_area = 10,
+        base_area = 2,
         base_level = -1,
         pipe_connections = {{ type="input", position = {0, -2} }},
         secondary_draw_orders = { north = -1 }
@@ -405,7 +405,7 @@ local function addMatterConverter(tier, NumTiers)
         production_type = "output",
         pipe_picture = assembler3pipepictures(),
         pipe_covers = pipecoverspictures(),
-        base_area = 10,
+        base_area = 2,
         base_level = 1,
         pipe_connections = {{ type="output", position = {0, 2} }},
         secondary_draw_orders = { north = -1 }
