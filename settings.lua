@@ -1,5 +1,41 @@
 --These are the other mod settings.  They're fairly straightforward.
 data:extend({
+	
+	{
+		type = "bool-setting",
+		name = "replication-steps-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "b-1",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-final-data-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "b-2",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-value-calculation-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "b-3",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-recipe-tech-generation-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "b-3",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-tier-calculation-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "b-4",
+	},
 	{
 		name = "replstats-speed-base",
 		type = "double-setting",
