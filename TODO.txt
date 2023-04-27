@@ -6,3 +6,5 @@ Art
 Remove STDLib
 Include support for rocket launch products?
 Include detection for recipes that use rocket launch products, either to exclude them or to calculate their worth correctly
+Include existing master table support.
+Implement a master table checksum for use in support. Need to check that items and recipes have not changed.

@@ -3,6 +3,27 @@ data:extend({
 	
 	{
 		type = "bool-setting",
+		name = "use-existing-master-table",
+		setting_type = "startup",
+		default_value = false,
+		order = "a-1",
+	},
+	{
+		type = "bool-setting",
+		name = "ignore-master-table-checksum",
+		setting_type = "startup",
+		default_value = false,
+		order = "a-2",
+	},
+	{
+		type = "bool-setting",
+		name = "log-master-table",
+		setting_type = "startup",
+		default_value = false,
+		order = "a-3",
+	},
+	{
+		type = "bool-setting",
 		name = "replication-steps-logging",
 		setting_type = "startup",
 		default_value = false,
@@ -27,14 +48,22 @@ data:extend({
 		name = "replication-recipe-tech-generation-logging",
 		setting_type = "startup",
 		default_value = false,
-		order = "b-3",
+		order = "b-4",
 	},
 	{
 		type = "bool-setting",
 		name = "replication-tier-calculation-logging",
 		setting_type = "startup",
 		default_value = false,
-		order = "b-4",
+		order = "b-5",
+	},
+	{
+		type = "string-setting",
+		name = "item-collection-type",
+		setting_type = "startup",
+		default_value = "recipes",
+		allowed_values =  {"items", "recipes"},
+		order = "c-1",
 	},
 	{
 		name = "replstats-speed-base",

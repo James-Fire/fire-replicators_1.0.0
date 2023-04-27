@@ -1,5 +1,10 @@
+log(settings.startup["item-collection-type"].value)
+
 if settings.startup["replication-steps-logging"].value then
 	log("Starting variable initialization")
+end
+if settings.startup["use-existing-master-table"].value then
+	MasterTable = require("master-table")
 end
 
 local BaseMatterCost = 5 --How much matter is used to make 1 piece of ore  --settings.startup["tiberium-damage"].value
@@ -110,6 +115,12 @@ end
 
 local function RecipeStringMatch(RecipeName)
 	--log("String Match Recipe "..RecipeName)
+	if RecipeName:find("fp-da", 1, true) then
+		--log("Found scrap recipe "..RecipeName)
+		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
+			return true
+		end
+	end
 	if RecipeName:find("barrel", 1, true) or RecipeName:find("canister", 1, true) then
 		if RecipeName:find("fill", 1, true) or RecipeName:find("empty", 1, true) then
 			if RecipeName == "empty-barrel" then
@@ -132,19 +143,7 @@ local function RecipeStringMatch(RecipeName)
 			return true
 		end
 	end
-	if RecipeName:find("deep", 1, true) and RecipeName:find("mining", 1, true) then
-		--log("Found liquefaction recipe "..RecipeName)
-		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
-			return true
-		end
-	end
 	if RecipeName:find("scrap", 1, true) then
-		--log("Found scrap recipe "..RecipeName)
-		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
-			return true
-		end
-	end
-	if RecipeName:find("fp-da", 1, true) then
 		--log("Found scrap recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
@@ -162,15 +161,20 @@ local function RecipeStringMatch(RecipeName)
 			return true
 		end
 	end
+	if RecipeName:find("scrap", 1, true) or RecipeName:find("person", 1, true) then
+		if CheckTableValue(RecipeName,BadItemList) == false then
+			return true
+		end
+	end
 	return false
 end
 local function ItemStringMatch(ItemName)
-	if ItemName:find("scrap", 1, true) or ItemName:find("person", 1, true) then
+	if ItemName:find("interface", 1, true) or ItemName:find("infinity", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
 	end
-	if ItemName:find("interface", 1, true) or ItemName:find("infinity", 1, true) then
+	if ItemName:find("ore", 1, true) and ItemName:find("chunk", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
@@ -180,9 +184,19 @@ local function ItemStringMatch(ItemName)
 			return true
 		end
 	end
+	if ItemName:find("scrap", 1, true) or ItemName:find("person", 1, true) then
+		if CheckTableValue(ItemName,BadItemList) == false then
+			return true
+		end
+	end
 	return false
 end
 local function FluidStringMatch(FluidName)
+	if FluidName:find("torque", 1, true) or FluidName:find("steam", 1, true) then
+		if CheckTableValue(FluidName,BadItemList) == false then
+			return true
+		end
+	end
 	if FluidName:find("joule", 1, true) then
 		if CheckTableValue(FluidName,BadItemList) == false then
 			return true
@@ -218,6 +232,11 @@ local function RecipeBadnessTest(Recipe)
 	
 	--Use string matching to grab likely bad recipe categories
 	if Recipe.category then
+		if CheckTableValue(Recipe.category,BadRecipeCategories) == true then
+			if CheckTableValue(Recipe,BadRecipeList) == false then
+				return true
+			end
+		end
 		if Recipe.category:find("deep", 1, true) and Recipe.category:find("mining", 1, true) or Recipe.category:find("mine", 1, true) then
 			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
 				table.insert(BadRecipeCategories, Recipe.category)
@@ -236,10 +255,9 @@ local function RecipeBadnessTest(Recipe)
 				return true
 			end
 		end
-	end
-	if Recipe.category then
-		if CheckTableValue(Recipe.category,BadRecipeCategories) == true then
-			if CheckTableValue(Recipe,BadRecipeList) == false then
+		if Recipe.category:find("tur_converter", 1, true) then
+			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
+				table.insert(BadRecipeCategories, Recipe.category)
 				return true
 			end
 		end
@@ -280,58 +298,64 @@ local function RecipeBadnessTest(Recipe)
 	end]]
 
 end
-for i, Recipe in pairs(data.raw.recipe) do
-	log("Checking "..Recipe.name)
-	if RecipeBadnessTest(Recipe) then
-		--log(Recipe.name.." is bad")
-		table.insert(BadRecipeList, Recipe)
-		table.insert(BadRecipeNameList, Recipe.name)
-	else
-		--log(Recipe.name.." is not bad")
-		local recipe_data = Recipe
-		if Recipe.normal then
-			recipe_data = Recipe.normal
+	if settings.startup["item-collection-type"].value == "items" then
+		for i, Recipe in pairs(data.raw.recipe) do
+			--log("Checking "..Recipe.name)
+			if RecipeBadnessTest(Recipe) then
+				--log(Recipe.name.." is bad")
+				table.insert(BadRecipeList, Recipe)
+				table.insert(BadRecipeNameList, Recipe.name)
+			end
 		end
-		--log(serpent.block(recipe_data))
-		if recipe_data.results then
-			--log("Recipe has results table: "..serpent.block(recipe_data.results))
-			for i, result in pairs(recipe_data.results) do
-				local recipeindex = nil
-				if result.name then
-					recipeindex = result.name
-				else
-					recipeindex = result[1]
+	elseif settings.startup["item-collection-type"].value == "recipes" then
+		for i, Recipe in pairs(data.raw.recipe) do
+			--log("Checking "..Recipe.name)
+			if RecipeBadnessTest(Recipe) then
+				--log(Recipe.name.." is bad")
+				table.insert(BadRecipeList, Recipe)
+				table.insert(BadRecipeNameList, Recipe.name)
+			else
+				--log(Recipe.name.." is not bad")
+				local recipe_data = Recipe
+				if Recipe.normal then
+					recipe_data = Recipe.normal
 				end
-				if recipeindex then
-					--log("Item "..recipeindex.." exists")
-					if CheckTableValue(recipeindex, BadItemList) == false then
-						--log("Item "..recipeindex.." isn't bad item")
-						if CheckTableValue(recipeindex, RepliItems) == false then
-							--log("Item "..recipeindex.." isn't already on the list")
-							table.insert(RepliItems,recipeindex)
+				--log(serpent.block(recipe_data))
+				if recipe_data.results then
+					--log("Recipe has results table: "..serpent.block(recipe_data.results))
+					for i, result in pairs(recipe_data.results) do
+						local recipeindex = nil
+						if result.name then
+							recipeindex = result.name
+						else
+							recipeindex = result[1]
+						end
+						if recipeindex then
+							--log("Item "..recipeindex.." exists")
+							if CheckTableValue(recipeindex, BadItemList) == false then
+								--log("Item "..recipeindex.." isn't bad item")
+								if CheckTableValue(recipeindex, RepliItems) == false then
+									--log("Item "..recipeindex.." isn't already on the list")
+									table.insert(RepliItems,recipeindex)
+								end
+							end
+						end
+					end
+				elseif recipe_data.result then
+					--log("Recipe has single result: "..serpent.line(recipe_data.result))
+					
+					if CheckTableValue(recipe_data.result, BadItemList) == false then
+						--log("Item "..recipe_data.result.." isn't bad item")
+						if CheckTableValue(recipe_data.result, RepliItems) == false then
+							--log("Item "..recipe_data.result.." isn't already on the list")
+							table.insert(RepliItems,recipe_data.result)
 						end
 					end
 				end
 			end
-		elseif recipe_data.result then
-			--log("Recipe has single result: "..serpent.line(recipe_data.result))
-			--Rocket launch products need different handling in the value calculation, unimplemented so far
-			--[[if data.raw.item[recipeindex].rocket_launch_product then
-				local RocketLaunch = data.raw.item[recipeindex].rocket_launch_product[1]
-				if CheckTableValue(RocketLaunch, BadItemList) == false then
-					table.insert(RepliItems,recipeindex)
-				end
-			end]]
-			if CheckTableValue(recipe_data.result, BadItemList) == false then
-				--log("Item "..recipe_data.result.." isn't bad item")
-				if CheckTableValue(recipe_data.result, RepliItems) == false then
-					--log("Item "..recipe_data.result.." isn't already on the list")
-					table.insert(RepliItems,recipe_data.result)
-				end
-			end
 		end
 	end
-end
+
 
 --log("Bad Recipe Table: "..serpent.block(BadRecipeList))
 --log("Bad Recipe Name Table: "..serpent.block(BadRecipeNameList))
@@ -366,7 +390,7 @@ local function FindItemRecipe(Item)
 			if CheckTableValue(recipe,RecipeTable) == false then
 				if recipe.main_product == Item then
 						table.insert(RecipeTable,recipe)
-				elseif recipe.main_product == nil then
+				else
 					if recipe.results then
 						for i, result_data in pairs(recipe.results) do
 							if (result_data.name or result_data[1]) == Item then
@@ -384,10 +408,11 @@ local function FindItemRecipe(Item)
 	end
 	for i, r1 in pairs(RecipeTable) do
 		for j, r2 in pairs(RecipeTable) do
-			if i == j then
-			else
+			if i ~= j then
 				if r1 == r2 then
-					RecipeTable[j] = nil
+					if RecipeTable[j] then
+						RecipeTable[j] = nil
+					end
 				end
 			end
 		end
@@ -409,6 +434,7 @@ local function addMatterRecipe(ore)
 	local itemOrFluid = data.raw.fluid[ore] and "fluid" or "item"
 	local energy = 2.5
 	local order = 1
+	
 	
 	if ore:find("water", 1, true) then
 		oreAmount = 5
@@ -433,7 +459,21 @@ local function addMatterRecipe(ore)
 	LSlib.recipe.enable(recipeName)
 	LSlib.recipe.setSubgroup(recipeName, "replication-resources")
 	LSlib.recipe.setShowMadeIn(recipeName, true)
-	data.raw.recipe[recipeName].category = "Matter-Converter"
+	LSlib.recipe.setCraftingCategory(recipeName, "Matter-Converter")
+	--[[if data.raw[itemOrFluid][ore].icon then
+		local Icons = {
+			{
+				icon = "__fire-replicators__/graphics/icons/eridium.png",
+				icon_size = 32,
+			},
+			{
+				icon = data.raw[itemOrFluid][ore].icon,
+				icon_size = data.raw[itemOrFluid][ore].icon_size,
+				--scale = data.raw[itemOrFluid][ore].icon_size,
+			},
+		}
+		LSlib.recipe.changeIcons(recipeName, Icons, 32)
+	end]]
 end
 
 local function MatterConverterIngredients(tier, NumTiers)
@@ -522,8 +562,9 @@ end
 --Basically just determine how many steps from ore the item is by following its ingredients. Look for the shortest appearance of ore.
 --Make sure to save it somewhere so we aren't repeating this, cause this is expensive.
 local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
+	--log(Item.." started")
 	local Recipe = FindItemRecipe(Item)[1]
-	if Recipe then --Check if the recipe exists, cause it might not for whatever reason
+	if Recipe and CheckTableValue(Recipe,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
 		--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
 		local ItemTier = 0 --Item tier determines some multiplicative stuff.
 		local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
@@ -635,7 +676,7 @@ end
 
 local function LogAllItemValues()
 	for _, entry in pairs(RepliTableTable) do
-		log("Master Table: "..serpent.line(entry))
+		log("Item Values Master Table: "..serpent.line(entry))
 	end
 end
 
@@ -745,7 +786,7 @@ local function GenerateRepliRecipeAndTech(Item)
 					{
 						icon = "__fire-replicators__/graphics/icons/borders/"..GetTechBorder(Item.name)..".png",
 						icon_size = 128,
-						scale = 1,
+						scale = ItemIconSize/128,
 						shift = {0, 0},
 					},
 				},
@@ -808,18 +849,28 @@ end
 if settings.startup["replication-steps-logging"].value then
 	log("Starting item collection")
 end
---[[local Items = { "item", "fluid", "module", "tool", "ammo", "capsule", "armor", "gun", "rail-planner", "repair-tool", "item-with-entity-data", "spidertron-remote" }
-for i, ItemType in pairs(Items) do
-	for j, Item in pairs(data.raw[ItemType]) do
-		if CheckTableValue(Item.name, BadItemList) == false and CheckRecipeResultTableValue(Item.name) == true then
-			table.insert(RepliItems,Item.name)
+if settings.startup["item-collection-type"].value == "items" then
+	local Items = { "item", "fluid", "module", "tool", "ammo", "capsule", "armor", "gun", "rail-planner", "repair-tool", "item-with-entity-data", "spidertron-remote" }
+	for i, ItemType in pairs(Items) do
+		for j, Item in pairs(data.raw[ItemType]) do
+			if CheckTableValue(Item.name, BadItemList) == false then
+				if CheckRecipeResultTableValue(Item.name) == true then
+					table.insert(RepliItems,Item.name)
+				end
+			end
 		end
 	end
 end
-for j, Recipe in pairs(data.raw.recipe) do
+--[[for j, Recipe in pairs(data.raw.recipe) do
 	if NotBannedRecipe(Recipe) then
 		log(Recipe.name.." isn't banned")
-		
+		--Rocket launch products need different handling in the value calculation, unimplemented so far
+		if data.raw.item[recipeindex].rocket_launch_product then
+			local RocketLaunch = data.raw.item[recipeindex].rocket_launch_product[1]
+			if CheckTableValue(RocketLaunch, BadItemList) == false then
+				table.insert(RepliItems,recipeindex)
+			end
+		end
 	end
 end]]
 if settings.startup["replication-steps-logging"].value then
@@ -883,6 +934,7 @@ end
 for i, Item in pairs(RepliOres) do
 	table.insert(RepliTableTable,{ Item, 0, 1 })
 end
+table.insert(RepliTableTable,{ "steam", 1, 2, {"water"} })
 if settings.startup["replication-steps-logging"].value then
 	log("Starting Matter Conversion recipes")
 end
@@ -891,99 +943,127 @@ for i, Item in pairs(RepliOres) do
 end
 addMatterRecipe("eridium")
 
---Calculate item values
-if settings.startup["replication-steps-logging"].value then
-	log("Starting item value calculation")
-end
-for i, Item in pairs(RepliItems) do
-	local PrevRecipeTable = { }
-	if CheckTableValue( Item,RepliTableTable,1 ) == false then
-		GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
-	end
-end
-
---After calculating stuff, extract all the tier values
-
-if settings.startup["replication-steps-logging"].value then
-	log("Starting Tier calculation")
-end
-local function Mean(Table)
-	local MeanValue = 0
-	for i, entry in pairs(Table) do
-		MeanValue = MeanValue + entry
-	end
-	MeanValue = MeanValue/table_size(Table)
-	return MeanValue
-end
-local function Median(Table)
-	local MedianIndex = round(table_size(Table)/2)
-	return Table[MedianIndex]
+--Make a checksum for the master table, if we need it
+local function MasterTableChecksum()
+	local ChecksumTable = { }
+	--Log things that we don't need to calculate. Best is more cheaper info over better expensive info, as enough data points will get close enough
+	
+	--Log the modlist
+	
+	
+	--Log the items
+	--Log the recipes
+	
+	--log the mod settings that actually affect generation
+	
+	return ChecksumTable
 end
 
-local HighestTier = { 0 }
-local CalculatedTier = MaxTier
-local TierCount = { 0, 0, 0, 0, 0 } --Count how many recipes we find for each tier band
-local TierTable = { } --Count how many recipes we find for each tier band
-for i, entry in pairs(RepliTableTable) do
-	table.insert(TierTable, entry[2])
-	if entry[2] > HighestTier[1] then
-		table.insert(HighestTier, 1, entry[2])
-	end
-end
---log("Item tiers extracted and sorted")
---log("Highest Tiers:")
---for _, entry in pairs(HighestTier) do
---	log(serpent.line(entry))
---end
---log("Highest Tiers Mean:"..serpent.line(Mean(HighestTier)))
---log("Highest Tiers Median:"..serpent.line(Median(HighestTier)))
---log("All recipe tier Mean:"..serpent.line(Mean(TierTable)))
---log("All recipe tier Median:"..serpent.line(Median(TierTable)))
-table.sort(TierTable)
---Prune the highest tier if it's too high
-for i, Tier in pairs(HighestTier) do
-	if Tier > (2*Median(TierTable)) then
-		if settings.startup["replication-tier-calculation-logging"].value then
-			log("Tier "..Tier.." is more than 2x higher than "..tostring(Median(TierTable))..", tossing")
+local MasterTableChecksumMatch = false
+
+if settings.startup["log-master-table"].value or settings.startup["use-existing-master-table"].value then
+	if settings.startup["ignore-master-table-checksum"].value == false then
+		if MasterTable.Table[1] == MasterTableChecksum() then
+			MasterTableChecksumMatch = true
 		end
-	else
-		if settings.startup["replication-tier-calculation-logging"].value then
-			log("Tier "..Tier.." is not too high, continuing")
+	end
+end
+if MasterTable.Table[2] and settings.startup["use-existing-master-table"].value and MasterTableChecksumMatch == true or settings.startup["ignore-master-table-checksum"].value then
+	RepliTableTable = MasterTable.Table[2]
+else
+	--Calculate item values
+	if settings.startup["replication-steps-logging"].value then
+		log("Starting item value calculation")
+	end
+	for i, Item in pairs(RepliItems) do
+		local PrevRecipeTable = { }
+		if CheckTableValue( Item,RepliTableTable,1 ) == false then
+			GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		end
-		CalculatedTier = Tier
-		break
+	end
+
+	--After calculating stuff, extract all the tier values
+
+	if settings.startup["replication-steps-logging"].value then
+		log("Starting Tier calculation")
+	end
+	local function Mean(Table)
+		local MeanValue = 0
+		for i, entry in pairs(Table) do
+			MeanValue = MeanValue + entry
+		end
+		MeanValue = MeanValue/table_size(Table)
+		return MeanValue
+	end
+	local function Median(Table)
+		local MedianIndex = round(table_size(Table)/2)
+		return Table[MedianIndex]
+	end
+
+	local HighestTier = { 0 }
+	local CalculatedTier = MaxTier
+	local TierCount = { 0, 0, 0, 0, 0 } --Count how many recipes we find for each tier band
+	local TierTable = { } --Count how many recipes we find for each tier band
+	for i, entry in pairs(RepliTableTable) do
+		table.insert(TierTable, entry[2])
+		if entry[2] > HighestTier[1] then
+			table.insert(HighestTier, 1, entry[2])
+		end
+	end
+	--log("Item tiers extracted and sorted")
+	--log("Highest Tiers:")
+	--for _, entry in pairs(HighestTier) do
+	--	log(serpent.line(entry))
+	--end
+	--log("Highest Tiers Mean:"..serpent.line(Mean(HighestTier)))
+	--log("Highest Tiers Median:"..serpent.line(Median(HighestTier)))
+	--log("All recipe tier Mean:"..serpent.line(Mean(TierTable)))
+	--log("All recipe tier Median:"..serpent.line(Median(TierTable)))
+	table.sort(TierTable)
+	--Prune the highest tier if it's too high
+	for i, Tier in pairs(HighestTier) do
+		if Tier > (2*Median(TierTable)) then
+			if settings.startup["replication-tier-calculation-logging"].value then
+				log("Tier "..Tier.." is more than 2x higher than "..tostring(Median(TierTable))..", tossing")
+			end
+		else
+			if settings.startup["replication-tier-calculation-logging"].value then
+				log("Tier "..Tier.." is not too high, continuing")
+			end
+			CalculatedTier = Tier
+			break
+		end
+	end
+
+	--Calculate stuff so that the top tier bands aren't extremely sparsely populated
+	TierDivisor = round(CalculatedTier/MaxTier)
+	TierBands[1] = TierDivisor
+	TierBands[2] = TierDivisor*2
+	TierBands[3] = TierDivisor*3
+	TierBands[4] = TierDivisor*4
+	TierBands[5] = TierDivisor*5
+
+	for i, entry in pairs(TierTable) do
+		if entry <= TierBands[1] then
+			TierCount[1] = TierCount[1] + 1
+		elseif entry <= TierBands[2] then
+			TierCount[2] = TierCount[2] + 1
+		elseif entry <= TierBands[3] then
+			TierCount[3] = TierCount[3] + 1
+		elseif entry <= TierBands[4] then
+			TierCount[4] = TierCount[4] + 1
+		else
+			TierCount[5] = TierCount[5] + 1
+		end
+	end
+
+	if settings.startup["replication-final-data-logging"].value then
+		log("Tier Band Width: "..tostring(TierDivisor))
+		log("Highest non-outlier Tier: "..tostring(CalculatedTier))
+		log("Calculated tier bands: "..serpent.block(TierBands))
+		log("Tier band recipe count: "..serpent.block(TierCount))
 	end
 end
-
---Calculate stuff so that the top tier bands aren't extremely sparsely populated
-TierDivisor = round(CalculatedTier/MaxTier)
-TierBands[1] = TierDivisor
-TierBands[2] = TierDivisor*2
-TierBands[3] = TierDivisor*3
-TierBands[4] = TierDivisor*4
-TierBands[5] = TierDivisor*5
-
-for i, entry in pairs(TierTable) do
-	if entry <= TierBands[1] then
-		TierCount[1] = TierCount[1] + 1
-	elseif entry <= TierBands[2] then
-		TierCount[2] = TierCount[2] + 1
-	elseif entry <= TierBands[3] then
-		TierCount[3] = TierCount[3] + 1
-	elseif entry <= TierBands[4] then
-		TierCount[4] = TierCount[4] + 1
-	else
-		TierCount[5] = TierCount[5] + 1
-	end
-end
-
-if settings.startup["replication-final-data-logging"].value then
-	log("Tier Band Width: "..tostring(TierDivisor))
-	log("Highest non-outlier Tier: "..tostring(CalculatedTier))
-	log("Calculated tier bands: "..serpent.block(TierBands))
-	log("Tier band recipe count: "..serpent.block(TierCount))
-end
-
 
 --Recipe and tech generation with ores
 if settings.startup["replication-steps-logging"].value then
@@ -1059,4 +1139,10 @@ end
 
 if settings.startup["replication-final-data-logging"].value then
 	LogAllItemValues()
+end
+
+
+--Log a suitable master table with a checksum, entry 1 is the checksum, entry 2 is the master table
+if settings.startup["log-master-table"].value then
+	log(serpent.block()
 end
