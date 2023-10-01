@@ -950,8 +950,8 @@ local function MasterTableChecksum()
 	
 	--Log the modlist
 	
-	
 	--Log the items
+	
 	--Log the recipes
 	
 	--log the mod settings that actually affect generation
@@ -1144,5 +1144,5 @@ end
 
 --Log a suitable master table with a checksum, entry 1 is the checksum, entry 2 is the master table
 if settings.startup["log-master-table"].value then
-	log(serpent.block()
+	log(serpent.block())
 end
