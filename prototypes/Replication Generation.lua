@@ -746,7 +746,7 @@ local function ApplyRecipePrereqs(Item)
 	prereqtable = CheckMasterTable(Item, 4)
 	if prereqtable then
 		for i, prereq in pairs(prereqtable) do
-			if data.raw.technology[prereq.."-replication-research"] then
+			if data.raw.technology[prereq.."-replication-research"] and CheckTableValue(data.raw.technology[prereq.."-replication-research"],data.raw.technology[Item.."-replication-research"].prerequisites) then
 				LSlib.technology.addPrerequisite(Item.."-replication-research", prereq.."-replication-research")
 			end
 		end
