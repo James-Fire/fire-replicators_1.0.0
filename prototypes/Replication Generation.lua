@@ -5,6 +5,8 @@ if settings.startup["replication-steps-logging"].value then
 end
 if settings.startup["use-existing-master-table"].value then
 	MasterTable = require("master-table")
+else
+	MasterTable = { }
 end
 
 local BaseMatterCost = 5 --How much matter is used to make 1 piece of ore  --settings.startup["tiberium-damage"].value
@@ -22,6 +24,7 @@ local ProcessedRepliItems = { }
 local RepliTableTable = { }
 local BadItemList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe" }
 local BadRecipePreList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe" }
+local GoodRecipeList = { }
 local BadRecipeList = { }
 local BadRecipeNameList = { }
 local BadRecipeCategories = { "forcefield-crafter" }
@@ -59,6 +62,7 @@ local function NotBannedRecipe(Recipe)
 end
 local function CheckRecipeResultTableValue(Item)
 	if Item == "item-unknown" then
+		return false
 	else
 		if data.raw.recipe[Item] then
 			return true
@@ -236,26 +240,22 @@ local function RecipeBadnessTest(Recipe)
 			if CheckTableValue(Recipe,BadRecipeList) == false then
 				return true
 			end
-		end
-		if Recipe.category:find("deep", 1, true) and Recipe.category:find("mining", 1, true) or Recipe.category:find("mine", 1, true) then
+		elseif Recipe.category:find("deep", 1, true) and Recipe.category:find("mining", 1, true) or Recipe.category:find("mine", 1, true) then
 			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
 			end
-		end
-		if Recipe.category:find("recycle", 1, true) or Recipe.category:find("recycling", 1, true) then
+		elseif Recipe.category:find("recycle", 1, true) or Recipe.category:find("recycling", 1, true) then
 			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
 			end
-		end
-		if Recipe.category:find("person", 1, true) then
+		elseif Recipe.category:find("person", 1, true) then
 			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
 			end
-		end
-		if Recipe.category:find("tur_converter", 1, true) then
+		elseif Recipe.category:find("tur_converter", 1, true) then
 			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
@@ -963,13 +963,13 @@ local MasterTableChecksumMatch = false
 
 if settings.startup["log-master-table"].value or settings.startup["use-existing-master-table"].value then
 	if settings.startup["ignore-master-table-checksum"].value == false then
-		if MasterTable.Table[1] == MasterTableChecksum() then
+		if MasterTable[1] == MasterTableChecksum() then
 			MasterTableChecksumMatch = true
 		end
 	end
 end
-if MasterTable.Table[2] and settings.startup["use-existing-master-table"].value and MasterTableChecksumMatch == true or settings.startup["ignore-master-table-checksum"].value then
-	RepliTableTable = MasterTable.Table[2]
+if MasterTable[2] and settings.startup["use-existing-master-table"].value and MasterTableChecksumMatch == true or settings.startup["ignore-master-table-checksum"].value then
+	RepliTableTable = MasterTable[2]
 else
 	--Calculate item values
 	if settings.startup["replication-steps-logging"].value then
