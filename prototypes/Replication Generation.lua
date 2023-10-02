@@ -124,8 +124,7 @@ local function RecipeStringMatch(RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	end
-	if RecipeName:find("barrel", 1, true) or RecipeName:find("canister", 1, true) then
+	elseif RecipeName:find("barrel", 1, true) or RecipeName:find("canister", 1, true) then
 		if RecipeName:find("fill", 1, true) or RecipeName:find("empty", 1, true) then
 			if RecipeName == "empty-barrel" then
 			else
@@ -134,38 +133,32 @@ local function RecipeStringMatch(RecipeName)
 				end
 			end
 		end
-	end
-	if RecipeName:find("reforming", 1, true) or RecipeName:find("cracking", 1, true) then
+	elseif RecipeName:find("reforming", 1, true) or RecipeName:find("cracking", 1, true) then
 		--log("Found cracking recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	end
-	if RecipeName:find("liquefaction", 1, true) or RecipeName:find("request", 1, true) then
+	elseif RecipeName:find("liquefaction", 1, true) or RecipeName:find("request", 1, true) then
 		--log("Found liquefaction recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	end
-	if RecipeName:find("scrap", 1, true) then
+	elseif RecipeName:find("scrap", 1, true) then
 		--log("Found scrap recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	end
-	if RecipeName:find("joule", 1, true) then
+	elseif RecipeName:find("joule", 1, true) then
 		--log("Found scrap recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	end
-	if RecipeName:find("coolant", 1, true) and RecipeName:find("hot", 1, true) or RecipeName:find("cold", 1, true) then
+	elseif RecipeName:find("coolant", 1, true) and RecipeName:find("hot", 1, true) or RecipeName:find("cold", 1, true) then
 		--log("Found scrap recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	end
-	if RecipeName:find("scrap", 1, true) or RecipeName:find("person", 1, true) then
+	elseif RecipeName:find("scrap", 1, true) or RecipeName:find("person", 1, true) then
 		if CheckTableValue(RecipeName,BadItemList) == false then
 			return true
 		end
@@ -177,18 +170,15 @@ local function ItemStringMatch(ItemName)
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
-	end
-	if ItemName:find("ore", 1, true) and ItemName:find("chunk", 1, true) then
+	elseif ItemName:find("ore", 1, true) and ItemName:find("chunk", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
-	end
-	if ItemName:find("recycle", 1, true) or ItemName:find("recycling", 1, true) then
+	elseif ItemName:find("recycle", 1, true) or ItemName:find("recycling", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
-	end
-	if ItemName:find("scrap", 1, true) or ItemName:find("person", 1, true) then
+	elseif ItemName:find("scrap", 1, true) or ItemName:find("person", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
@@ -200,13 +190,11 @@ local function FluidStringMatch(FluidName)
 		if CheckTableValue(FluidName,BadItemList) == false then
 			return true
 		end
-	end
-	if FluidName:find("joule", 1, true) then
+	elseif FluidName:find("joule", 1, true) then
 		if CheckTableValue(FluidName,BadItemList) == false then
 			return true
 		end
-	end
-	if FluidName:find("coolant", 1, true) and FluidName:find("hot", 1, true) or FluidName:find("cold", 1, true) then
+	elseif FluidName:find("coolant", 1, true) and FluidName:find("hot", 1, true) or FluidName:find("cold", 1, true) then
 		if CheckTableValue(FluidName,BadItemList) == false then
 			return true
 		end
@@ -474,89 +462,6 @@ local function addMatterRecipe(ore)
 		}
 		LSlib.recipe.changeIcons(recipeName, Icons, 32)
 	end]]
-end
-
-local function MatterConverterIngredients(tier, NumTiers)
-	local DMItem = { {"assembling-machine-"..tostring(tier),1} }
-	if (tier) > 1 then
-		table.insert(DMItem,{"Matter-Converter-"..tostring(tier-1),1})
-	end
-	
-	table.insert(DMItem,{ "dark-matter-scoop", tier })
-	if (tier/NumTiers) > 0.25 then
-		table.insert(DMItem,{ "dark-matter-transducer", round(tier/2) })
-	end
-	if (tier/NumTiers) > 0.5 then
-		table.insert(DMItem,{ "matter-conduit", round(tier/4) })
-	end
-	if (tier/NumTiers) > 0.75 then
-		DMItem[3][2] = tier*2
-		DMItem[4][2] = tier
-	end
-	if tier == NumTiers then
-		DMItem[5][2] = tier/2
-	end
-	return DMItem
-end
-local function addMatterConverter(tier, NumTiers)
-	local Matter_converter = table.deepcopy(data.raw["furnace"]["electric-furnace"])
-	Matter_converter.name = "Matter-Converter-"..tostring(tier)
-	Matter_converter.energy_usage = tostring((2*tier)).."MW"
-	Matter_converter.energy_source.emissions_per_minute = 0
-	Matter_converter.crafting_speed = tier
-	Matter_converter.minable.result = "Matter-Converter-"..tostring(tier)
-	Matter_converter.fluid_boxes =
-    {
-      {
-        production_type = "input",
-        pipe_picture = assembler3pipepictures(),
-        pipe_covers = pipecoverspictures(),
-        base_area = 2,
-        base_level = -1,
-        pipe_connections = {{ type="input", position = {0, -2} }},
-        secondary_draw_orders = { north = -1 }
-      },
-      {
-        production_type = "output",
-        pipe_picture = assembler3pipepictures(),
-        pipe_covers = pipecoverspictures(),
-        base_area = 2,
-        base_level = 1,
-        pipe_connections = {{ type="output", position = {0, 2} }},
-        secondary_draw_orders = { north = -1 }
-      },
-      off_when_no_fluid_recipe = false
-    }
-	Matter_converter.crafting_categories = {"Matter-Converter"}
-	Matter_converter.allowed_effects = {"speed", "consumption", "pollution"}
-	Matter_converter.module_specification = {
-		module_slots = tier
-	}
-	data:extend({Matter_converter})
-	data:extend({
-		{
-			type = "item",
-			name = "Matter-Converter-"..tostring(tier),
-			icon = "__base__/graphics/icons/assembling-machine-3.png",
-			icon_size = 64,
-			subgroup = "replicators",
-			place_result = "Matter-Converter-"..tostring(tier),
-			order = "q",
-			stack_size = 20
-		},
-		{
-			type = "recipe",
-			name = "Matter-Converter-"..tostring(tier),
-			enabled = true,
-			energy_required = 3*tier,
-			ingredients = MatterConverterIngredients(tier, NumTiers),
-			results = {{"Matter-Converter-"..tostring(tier),1}},
-		},
-	})
-	
-	--log("Matter Converter "..tier..": "..serpent.block(Matter_converter))
-	--log("Matter Converter "..tier.." Recipe: "..serpent.block(data.raw.recipe["Matter-Converter-"..tostring(tier)]))
-	--log("Matter Converter "..tier.." Item: "..serpent.block(data.raw.item["Matter-Converter-"..tostring(tier)]))
 end
 
 --Basically just determine how many steps from ore the item is by following its ingredients. Look for the shortest appearance of ore.

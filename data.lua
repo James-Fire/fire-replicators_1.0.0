@@ -9,6 +9,7 @@ require('prototypes.raw-resources')
 --require('prototypes.matter-plate')
 require('prototypes.intermediate-products')
 require('prototypes.replicators')
+require('prototypes.matter-converters')
 require('prototypes.replication-lab')
 require('prototypes.eridium')
 
