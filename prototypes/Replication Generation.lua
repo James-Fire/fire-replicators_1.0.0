@@ -48,6 +48,8 @@ local function CheckTableValue(Value,Table,SubTableIndex)
 	end
 	return false
 end
+
+
 local function NotBannedRecipe(Recipe)
 	if CheckTableValue(Recipe.category,BadRecipeCategories) == true then
 		return false
@@ -68,24 +70,20 @@ local function CheckRecipeResultTableValue(Item)
 			return true
 		else
 			--log("Checking for recipe for "..Item)
-			for i, recipe in pairs(data.raw.recipe) do
-				--log("Check if recipe "..recipe.name.." is banned")
-				if NotBannedRecipe(recipe) == true then
-					--log("Recipe "..recipe.name.." isn't banned")
-					if recipe.results then
-						--log("Recipe "..recipe.name.." has a result table")
-						for j, result in pairs(recipe.results) do
-							if Item == result.name then
-								--log("Found result table production recipe for "..Item)
-								return true
-							end
-						end
-					elseif recipe.result then
-						--log("Recipe "..recipe.name.." has a single result")
-						if Item == recipe.result.name then
-							--log("Found single-result production recipe for "..Item)
+			for i, recipe in pairs(GoodRecipeList) do
+				if recipe.results then
+					--log("Recipe "..recipe.name.." has a result table")
+					for j, result in pairs(recipe.results) do
+						if Item == result.name then
+							--log("Found result table production recipe for "..Item)
 							return true
 						end
+					end
+				elseif recipe.result then
+					--log("Recipe "..recipe.name.." has a single result")
+					if Item == recipe.result.name then
+						--log("Found single-result production recipe for "..Item)
+						return true
 					end
 				end
 			end
@@ -127,6 +125,7 @@ local function RecipeStringMatch(RecipeName)
 	elseif RecipeName:find("barrel", 1, true) or RecipeName:find("canister", 1, true) then
 		if RecipeName:find("fill", 1, true) or RecipeName:find("empty", 1, true) then
 			if RecipeName == "empty-barrel" then
+				return false
 			else
 				if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 					return true
@@ -194,7 +193,7 @@ local function FluidStringMatch(FluidName)
 		if CheckTableValue(FluidName,BadItemList) == false then
 			return true
 		end
-	elseif FluidName:find("coolant", 1, true) and FluidName:find("hot", 1, true) or FluidName:find("cold", 1, true) then
+	elseif FluidName:find("coolant", 1, true) and (FluidName:find("hot", 1, true) or FluidName:find("cold", 1, true)) then
 		if CheckTableValue(FluidName,BadItemList) == false then
 			return true
 		end
@@ -286,69 +285,75 @@ local function RecipeBadnessTest(Recipe)
 	end]]
 
 end
-	if settings.startup["item-collection-type"].value == "items" then
-		for i, Recipe in pairs(data.raw.recipe) do
-			--log("Checking "..Recipe.name)
-			if RecipeBadnessTest(Recipe) then
-				--log(Recipe.name.." is bad")
-				table.insert(BadRecipeList, Recipe)
-				table.insert(BadRecipeNameList, Recipe.name)
-			end
+if settings.startup["item-collection-type"].value == "items" then
+	for i, Recipe in pairs(data.raw.recipe) do
+		--log("Checking "..Recipe.name)
+		if RecipeBadnessTest(Recipe) then
+			--log(Recipe.name.." is bad")
+			table.insert(BadRecipeList, Recipe)
+			table.insert(BadRecipeNameList, Recipe.name)
 		end
-	elseif settings.startup["item-collection-type"].value == "recipes" then
-		for i, Recipe in pairs(data.raw.recipe) do
-			--log("Checking "..Recipe.name)
-			if RecipeBadnessTest(Recipe) then
-				--log(Recipe.name.." is bad")
-				table.insert(BadRecipeList, Recipe)
-				table.insert(BadRecipeNameList, Recipe.name)
-			else
-				--log(Recipe.name.." is not bad")
-				local recipe_data = Recipe
-				if Recipe.normal then
-					recipe_data = Recipe.normal
-				end
-				--log(serpent.block(recipe_data))
-				if recipe_data.results then
-					--log("Recipe has results table: "..serpent.block(recipe_data.results))
-					for i, result in pairs(recipe_data.results) do
-						local recipeindex = nil
-						if result.name then
-							recipeindex = result.name
-						else
-							recipeindex = result[1]
-						end
-						if recipeindex then
-							--log("Item "..recipeindex.." exists")
-							if CheckTableValue(recipeindex, BadItemList) == false then
-								--log("Item "..recipeindex.." isn't bad item")
-								if CheckTableValue(recipeindex, RepliItems) == false then
-									--log("Item "..recipeindex.." isn't already on the list")
-									table.insert(RepliItems,recipeindex)
-								end
+	end
+elseif settings.startup["item-collection-type"].value == "recipes" then
+	for i, Recipe in pairs(data.raw.recipe) do
+		--log("Checking "..Recipe.name)
+		if RecipeBadnessTest(Recipe) then
+			--log(Recipe.name.." is bad")
+			table.insert(BadRecipeList, Recipe)
+			table.insert(BadRecipeNameList, Recipe.name)
+		else
+			--log(Recipe.name.." is not bad")
+			local recipe_data = Recipe
+			if Recipe.normal then
+				recipe_data = Recipe.normal
+			end
+			--log(serpent.block(recipe_data))
+			if recipe_data.results then
+				--log("Recipe has results table: "..serpent.block(recipe_data.results))
+				for i, result in pairs(recipe_data.results) do
+					local recipeindex = nil
+					if result.name then
+						recipeindex = result.name
+					else
+						recipeindex = result[1]
+					end
+					if recipeindex then
+						--log("Item "..recipeindex.." exists")
+						if CheckTableValue(recipeindex, BadItemList) == false then
+							--log("Item "..recipeindex.." isn't bad item")
+							if CheckTableValue(recipeindex, RepliItems) == false then
+								--log("Item "..recipeindex.." isn't already on the list")
+								table.insert(RepliItems,recipeindex)
 							end
 						end
 					end
-				elseif recipe_data.result then
-					--log("Recipe has single result: "..serpent.line(recipe_data.result))
-					
-					if CheckTableValue(recipe_data.result, BadItemList) == false then
-						--log("Item "..recipe_data.result.." isn't bad item")
-						if CheckTableValue(recipe_data.result, RepliItems) == false then
-							--log("Item "..recipe_data.result.." isn't already on the list")
-							table.insert(RepliItems,recipe_data.result)
-						end
+				end
+			elseif recipe_data.result then
+				--log("Recipe has single result: "..serpent.line(recipe_data.result))
+				
+				if CheckTableValue(recipe_data.result, BadItemList) == false then
+					--log("Item "..recipe_data.result.." isn't bad item")
+					if CheckTableValue(recipe_data.result, RepliItems) == false then
+						--log("Item "..recipe_data.result.." isn't already on the list")
+						table.insert(RepliItems,recipe_data.result)
 					end
 				end
 			end
 		end
 	end
+end
 
 
 --log("Bad Recipe Table: "..serpent.block(BadRecipeList))
 --log("Bad Recipe Name Table: "..serpent.block(BadRecipeNameList))
 --log("Bad Category Table: "..serpent.block(BadRecipeCategories))
 --log("Bad Item Table: "..serpent.block(BadItemList))
+
+for i, recipe in pairs(data.raw.recipe) do
+	if NotBannedRecipe(recipe) == true then
+		table.insert(GoodRecipeList, data.raw.recipe[recipe])
+	end
+end
 
 --[[for name, proto in pairs(data.raw.recipe) do
 	if proto.results then
@@ -373,22 +378,20 @@ local function FindItemRecipe(Item)
 			end
 		end
 	end
-	for i, recipe in pairs(data.raw.recipe) do
-		if NotBannedRecipe(recipe) == true then
-			if CheckTableValue(recipe,RecipeTable) == false then
-				if recipe.main_product == Item then
-						table.insert(RecipeTable,recipe)
-				else
-					if recipe.results then
-						for i, result_data in pairs(recipe.results) do
-							if (result_data.name or result_data[1]) == Item then
-								table.insert(RecipeTable,recipe)
-							end
-						end
-					elseif recipe.result then
-						if recipe.result == Item then
+	for i, recipe in pairs(GoodRecipeList) do
+		if CheckTableValue(recipe,RecipeTable) == false then
+			if recipe.main_product == Item then
+					table.insert(RecipeTable,recipe)
+			else
+				if recipe.results then
+					for i, result_data in pairs(recipe.results) do
+						if (result_data.name or result_data[1]) == Item then
 							table.insert(RecipeTable,recipe)
 						end
+					end
+				elseif recipe.result then
+					if recipe.result == Item then
+						table.insert(RecipeTable,recipe)
 					end
 				end
 			end
@@ -818,20 +821,7 @@ if settings.startup["replication-final-data-logging"].value then
 	log("Ores Table: "..serpent.block(RepliOres))
 end
 
---Create matter converters, and replicators
-if settings.startup["replication-steps-logging"].value then
-	log("Starting Matter Converters and Replicators")
-end
-local AssemMach = { }
-for i, Item in pairs(data.raw.item) do
-	if Item.name:find("assembling", 1, true) and Item.name:find("machine", 1, true) then
-		table.insert(AssemMach, Item.name)
-	end
-end
 
-for i, Item in pairs(AssemMach) do
-	addMatterConverter(i, table_size(AssemMach) )
-end
 --Start recipe generation with ores
 if settings.startup["replication-steps-logging"].value then
 	log("Giving all ores the base values")
