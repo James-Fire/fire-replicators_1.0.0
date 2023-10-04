@@ -673,7 +673,7 @@ local function GenerateRepliRecipeAndTech(Item)
 				},
 				category = "replication-"..tostring(GetReplicationTier(Item.name)),
 				enabled = false,
-				energy_required = BaseTimeCost+2^GetReplicationTier(Item.name)*CheckMasterTable(Item.name, 2)^TierTimeFactor,
+				energy_required = round(BaseTimeCost+2^GetReplicationTier(Item.name)*CheckMasterTable(Item.name, 2)^TierTimeFactor, 1),
 				ingredients = {
 					{type = "fluid", name = "eridium", amount = round(BaseMatterCost*CheckMasterTable(Item.name, 3)) },
 				},
