@@ -428,17 +428,17 @@ local function addMatterRecipe(ore)
 	
 	
 	if ore:find("water", 1, true) then
-		oreAmount = 5
 		energy = 5
 	end
 	if ore:find("eridium", 1, true) then
 		recipeName = "regenerative-matter"
 		oreAmount = 4
-		energy = 1
+		energy = 10
+	else
 	end
 	
 	LSlib.recipe.create(recipeName)
-	if ore == "fluid" then
+	if itemOrFluid == "fluid" and (not ore:find("eridium", 1, true)) then
 		LSlib.recipe.addIngredient(recipeName, ore, 25, itemOrFluid)
 	else
 		LSlib.recipe.addIngredient(recipeName, ore, oreAmount, itemOrFluid)
