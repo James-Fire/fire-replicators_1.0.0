@@ -155,7 +155,7 @@ local function RecipeStringMatch(RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	elseif RecipeName:find("scrap", 1, true) then
+	elseif RecipeName:find("scrap", 1, true) and (not RecipeName:find("skyscraper", 1, true)) then
 		--log("Found scrap recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
@@ -170,8 +170,8 @@ local function RecipeStringMatch(RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	elseif RecipeName:find("scrap", 1, true) or RecipeName:find("person", 1, true) then
-		if CheckTableValue(RecipeName,BadItemList) == false then
+	elseif RecipeName:find("person", 1, true) then
+		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
 	end
@@ -190,7 +190,11 @@ local function ItemStringMatch(ItemName)
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
-	elseif ItemName:find("scrap", 1, true) or ItemName:find("person", 1, true) or ItemName:find("seed", 1, true) then
+	elseif ItemName:find("scrap", 1, true) and (not ItemName:find("skyscraper", 1, true)) then
+		if CheckTableValue(ItemName,BadItemList) == false then
+			return true
+		end
+	elseif ItemName:find("person", 1, true) or ItemName:find("seed", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
