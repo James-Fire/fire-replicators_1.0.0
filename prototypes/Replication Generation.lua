@@ -22,7 +22,7 @@ local RepliOres = { }
 local RepliItems = { }
 local ProcessedRepliItems = { }
 local RepliTableTable = { }
-local BadItemList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe" }
+local BadItemList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe", "item-unknown" }
 local BadRecipePreList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe" }
 local GoodRecipeList = { }
 local BadRecipeList = { }
@@ -49,9 +49,20 @@ local function CheckTableValue(Value,Table,SubTableIndex)
 	return false
 end
 
+local function GetRecipeCategory(Recipe)
+	if Recipe.category then
+		return Recipe.category
+	else
+		return "crafting"
+	--[[if Recipe.result then
+		if data.raw.item[Recipe.result] then
+			return data.raw.item[Recipe.result].subgroup
+		end]]
+	end
+end
 
 local function NotBannedRecipe(Recipe)
-	if CheckTableValue(Recipe.category,BadRecipeCategories) == true then
+	if CheckTableValue(GetRecipeCategory(Recipe),BadRecipeCategories) == true then
 		return false
 	end
 	if CheckTableValue(Recipe,BadRecipeList) == true then
@@ -71,9 +82,11 @@ local function CheckRecipeResultTableValue(Item)
 		else
 			--log("Checking for recipe for "..Item)
 			for i, recipe in pairs(GoodRecipeList) do
+				--log("Checking recipe "..recipe.name.." for "..Item)
 				if recipe.results then
 					--log("Recipe "..recipe.name.." has a result table")
 					for j, result in pairs(recipe.results) do
+						
 						if Item == result.name then
 							--log("Found result table production recipe for "..Item)
 							return true
@@ -247,6 +260,11 @@ local function RecipeBadnessTest(Recipe)
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
 			end
+		elseif Recipe.category:find("transport", 1, true) and Recipe.category:find("request", 1, true) then
+			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
+				table.insert(BadRecipeCategories, Recipe.category)
+				return true
+			end
 		end
 	end
 	--[[if Recipe.normal then
@@ -350,10 +368,13 @@ end
 --log("Bad Item Table: "..serpent.block(BadItemList))
 
 for i, recipe in pairs(data.raw.recipe) do
+	--log("Good Recipe Candidate: "..serpent.block(recipe))
 	if NotBannedRecipe(recipe) == true then
-		table.insert(GoodRecipeList, data.raw.recipe[recipe])
+		--log("Good Recipe Inserted: "..recipe.name)
+		table.insert(GoodRecipeList, recipe)
 	end
 end
+--log("Good Recipe List: "..serpent.block(GoodRecipeList))
 
 --[[for name, proto in pairs(data.raw.recipe) do
 	if proto.results then
@@ -761,8 +782,11 @@ if settings.startup["item-collection-type"].value == "items" then
 	local Items = { "item", "fluid", "module", "tool", "ammo", "capsule", "armor", "gun", "rail-planner", "repair-tool", "item-with-entity-data", "spidertron-remote" }
 	for i, ItemType in pairs(Items) do
 		for j, Item in pairs(data.raw[ItemType]) do
+			--log("Checking Item: "..Item.name)
 			if CheckTableValue(Item.name, BadItemList) == false then
+				--log(Item.name.." isn't banned")
 				if CheckRecipeResultTableValue(Item.name) == true then
+					--log(Item.name.." has a recipe that makes it")
 					table.insert(RepliItems,Item.name)
 				end
 			end
