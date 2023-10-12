@@ -644,6 +644,7 @@ local function GenerateRepliRecipeAndTech(Item)
 		local ItemType = nil
 		local ItemOrder = "1"
 		local ItemIcon = "__core__/graphics/empty.png"
+		local ItemIcons = { }
 		local ItemIconSize = 1
 		local ItemMipMaps = 1
 		if Item.order then
@@ -675,6 +676,24 @@ local function GenerateRepliRecipeAndTech(Item)
 		if ItemIcon == "__core__/graphics/empty.png" then
 			ItemIconSize = 1
 		end
+		if Item.icons then
+			for i, icons in pairs(Item.icons) do
+				table.insert(ItemIcons,icons)
+			end
+		elseif ItemIcon ~= "__core__/graphics/empty.png" then
+			table.insert(ItemIcons,
+			{
+				icon = ItemIcon,
+				icon_size = ItemIconSize,
+			})
+		end
+		table.insert(ItemIcons, 
+		{
+			icon = "__fire-replicators__/graphics/icons/borders/"..GetItemBorder(Item.name)..".png",
+			icon_size = 32,
+			scale = 1,
+			shift = {0, 0},
+		})
 		--log("Replication Value for "..Item.name..": "..tostring(CheckMasterTable(Item.name, 3)))
 		--log("Tech cost for "..Item.name..": "..tostring(round(CheckMasterTable(Item.name, 3)/4)))
 		--log("Icon String for "..Item.name..": "..ItemIcon)
@@ -684,18 +703,7 @@ local function GenerateRepliRecipeAndTech(Item)
 			{
 				type = "recipe",
 				name = Item.name.."-replication",
-				icons = {
-					{
-						icon = ItemIcon,
-						icon_size = ItemIconSize,
-					},
-					{
-						icon = "__fire-replicators__/graphics/icons/borders/"..GetItemBorder(Item.name)..".png",
-						icon_size = 32,
-						scale = 1,
-						shift = {0, 0},
-					},
-				},
+				icons = ItemIcons,
 				category = "replication-"..tostring(GetReplicationTier(Item.name)),
 				enabled = false,
 				energy_required = round(BaseTimeCost+2^GetReplicationTier(Item.name)*CheckMasterTable(Item.name, 2)^TierTimeFactor, 1),
