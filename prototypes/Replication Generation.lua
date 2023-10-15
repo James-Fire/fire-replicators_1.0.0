@@ -655,6 +655,7 @@ local function GenerateRepliRecipeAndTech(Item)
 		else
 			ItemType = "item"
 		end
+		--Icon stuff
 		if Item.icon then
 			ItemIcon = Item.icon
 		elseif Item.sprite then
@@ -694,6 +695,16 @@ local function GenerateRepliRecipeAndTech(Item)
 			scale = 1,
 			shift = {0, 0},
 		})
+		--Tech Name stuff
+		local ItemLocalName = ""
+		if Item.localised_name then
+			ItemLocalName = Item.localised_name
+		elseif Item.place_result then
+			ItemLocalName = {"entity-name."..Item.place_result}
+		--elseif {ItemType.."-name." .. Item.name} then
+		else
+			ItemLocalName = {"item-name."..Item.name}
+		end
 		--log("Replication Value for "..Item.name..": "..tostring(CheckMasterTable(Item.name, 3)))
 		--log("Tech cost for "..Item.name..": "..tostring(round(CheckMasterTable(Item.name, 3)/4)))
 		--log("Icon String for "..Item.name..": "..ItemIcon)
@@ -718,6 +729,7 @@ local function GenerateRepliRecipeAndTech(Item)
 			},
 			{
 				type = "technology",
+				localised_name = { "technology-name.replication-research", ItemLocalName },
 				name = Item.name.."-replication-research",
 				icons = {
 					{
