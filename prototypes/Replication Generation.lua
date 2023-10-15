@@ -3,11 +3,6 @@ log(settings.startup["item-collection-type"].value)
 if settings.startup["replication-steps-logging"].value then
 	log("Starting variable initialization")
 end
-if settings.startup["use-existing-master-table"].value then
-	MasterTable = require("master-table")
-else
-	MasterTable = { }
-end
 
 local BaseMatterCost = 5 --How much matter is used to make 1 piece of ore  --settings.startup["tiberium-damage"].value
 local AddedMatterCostDivisor = 1.5 --How much to divide ingredient values by. It's easier to make the final product directly?
@@ -887,126 +882,97 @@ for i, Item in pairs(RepliOres) do
 end
 addMatterRecipe("eridium")
 
---Make a checksum for the master table, if we need it
-local function MasterTableChecksum()
-	local ChecksumTable = { }
-	--Log things that we don't need to calculate. Best is more cheaper info over better expensive info, as enough data points will get close enough
-	
-	--Log the modlist
-	
-	--Log the items
-	
-	--Log the recipes
-	
-	--log the mod settings that actually affect generation
-	
-	return ChecksumTable
+--Calculate item values
+if settings.startup["replication-steps-logging"].value then
+	log("Starting item value calculation")
+end
+for i, Item in pairs(RepliItems) do
+	local PrevRecipeTable = { }
+	if CheckTableValue( Item,RepliTableTable,1 ) == false then
+		GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
+	end
 end
 
-local MasterTableChecksumMatch = false
+--After calculating stuff, extract all the tier values
 
-if settings.startup["log-master-table"].value or settings.startup["use-existing-master-table"].value then
-	if settings.startup["ignore-master-table-checksum"].value == false then
-		if MasterTable[1] == MasterTableChecksum() then
-			MasterTableChecksumMatch = true
-		end
+if settings.startup["replication-steps-logging"].value then
+	log("Starting Tier calculation")
+end
+local function Mean(Table)
+	local MeanValue = 0
+	for i, entry in pairs(Table) do
+		MeanValue = MeanValue + entry
+	end
+	MeanValue = MeanValue/table_size(Table)
+	return MeanValue
+end
+local function Median(Table)
+	local MedianIndex = round(table_size(Table)/2)
+	return Table[MedianIndex]
+end
+
+local HighestTier = { 0 }
+local CalculatedTier = MaxTier
+local TierCount = { 0, 0, 0, 0, 0 } --Count how many recipes we find for each tier band
+local TierTable = { } --Count how many recipes we find for each tier band
+for i, entry in pairs(RepliTableTable) do
+	table.insert(TierTable, entry[2])
+	if entry[2] > HighestTier[1] then
+		table.insert(HighestTier, 1, entry[2])
 	end
 end
-if MasterTable[2] and settings.startup["use-existing-master-table"].value and MasterTableChecksumMatch == true or settings.startup["ignore-master-table-checksum"].value then
-	RepliTableTable = MasterTable[2]
-else
-	--Calculate item values
-	if settings.startup["replication-steps-logging"].value then
-		log("Starting item value calculation")
-	end
-	for i, Item in pairs(RepliItems) do
-		local PrevRecipeTable = { }
-		if CheckTableValue( Item,RepliTableTable,1 ) == false then
-			GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
+--log("Item tiers extracted and sorted")
+--log("Highest Tiers:")
+--for _, entry in pairs(HighestTier) do
+--	log(serpent.line(entry))
+--end
+--log("Highest Tiers Mean:"..serpent.line(Mean(HighestTier)))
+--log("Highest Tiers Median:"..serpent.line(Median(HighestTier)))
+--log("All recipe tier Mean:"..serpent.line(Mean(TierTable)))
+--log("All recipe tier Median:"..serpent.line(Median(TierTable)))
+table.sort(TierTable)
+--Prune the highest tier if it's too high
+for i, Tier in pairs(HighestTier) do
+	if Tier > (2*Median(TierTable)) then
+		if settings.startup["replication-tier-calculation-logging"].value then
+			log("Tier "..Tier.." is more than 2x higher than "..tostring(Median(TierTable))..", tossing")
 		end
-	end
-
-	--After calculating stuff, extract all the tier values
-
-	if settings.startup["replication-steps-logging"].value then
-		log("Starting Tier calculation")
-	end
-	local function Mean(Table)
-		local MeanValue = 0
-		for i, entry in pairs(Table) do
-			MeanValue = MeanValue + entry
+	else
+		if settings.startup["replication-tier-calculation-logging"].value then
+			log("Tier "..Tier.." is not too high, continuing")
 		end
-		MeanValue = MeanValue/table_size(Table)
-		return MeanValue
+		CalculatedTier = Tier
+		break
 	end
-	local function Median(Table)
-		local MedianIndex = round(table_size(Table)/2)
-		return Table[MedianIndex]
-	end
+end
 
-	local HighestTier = { 0 }
-	local CalculatedTier = MaxTier
-	local TierCount = { 0, 0, 0, 0, 0 } --Count how many recipes we find for each tier band
-	local TierTable = { } --Count how many recipes we find for each tier band
-	for i, entry in pairs(RepliTableTable) do
-		table.insert(TierTable, entry[2])
-		if entry[2] > HighestTier[1] then
-			table.insert(HighestTier, 1, entry[2])
-		end
-	end
-	--log("Item tiers extracted and sorted")
-	--log("Highest Tiers:")
-	--for _, entry in pairs(HighestTier) do
-	--	log(serpent.line(entry))
-	--end
-	--log("Highest Tiers Mean:"..serpent.line(Mean(HighestTier)))
-	--log("Highest Tiers Median:"..serpent.line(Median(HighestTier)))
-	--log("All recipe tier Mean:"..serpent.line(Mean(TierTable)))
-	--log("All recipe tier Median:"..serpent.line(Median(TierTable)))
-	table.sort(TierTable)
-	--Prune the highest tier if it's too high
-	for i, Tier in pairs(HighestTier) do
-		if Tier > (2*Median(TierTable)) then
-			if settings.startup["replication-tier-calculation-logging"].value then
-				log("Tier "..Tier.." is more than 2x higher than "..tostring(Median(TierTable))..", tossing")
-			end
-		else
-			if settings.startup["replication-tier-calculation-logging"].value then
-				log("Tier "..Tier.." is not too high, continuing")
-			end
-			CalculatedTier = Tier
-			break
-		end
-	end
+--Calculate stuff so that the top tier bands aren't extremely sparsely populated
+TierDivisor = round(CalculatedTier/MaxTier)
+TierBands[1] = TierDivisor
+TierBands[2] = TierDivisor*2
+TierBands[3] = TierDivisor*3
+TierBands[4] = TierDivisor*4
+TierBands[5] = TierDivisor*5
 
-	--Calculate stuff so that the top tier bands aren't extremely sparsely populated
-	TierDivisor = round(CalculatedTier/MaxTier)
-	TierBands[1] = TierDivisor
-	TierBands[2] = TierDivisor*2
-	TierBands[3] = TierDivisor*3
-	TierBands[4] = TierDivisor*4
-	TierBands[5] = TierDivisor*5
-
-	for i, entry in pairs(TierTable) do
-		if entry <= TierBands[1] then
-			TierCount[1] = TierCount[1] + 1
-		elseif entry <= TierBands[2] then
-			TierCount[2] = TierCount[2] + 1
-		elseif entry <= TierBands[3] then
-			TierCount[3] = TierCount[3] + 1
-		elseif entry <= TierBands[4] then
-			TierCount[4] = TierCount[4] + 1
-		else
-			TierCount[5] = TierCount[5] + 1
-		end
+for i, entry in pairs(TierTable) do
+	if entry <= TierBands[1] then
+		TierCount[1] = TierCount[1] + 1
+	elseif entry <= TierBands[2] then
+		TierCount[2] = TierCount[2] + 1
+	elseif entry <= TierBands[3] then
+		TierCount[3] = TierCount[3] + 1
+	elseif entry <= TierBands[4] then
+		TierCount[4] = TierCount[4] + 1
+	else
+		TierCount[5] = TierCount[5] + 1
 	end
+end
 
-	if settings.startup["replication-final-data-logging"].value then
-		log("Tier Band Width: "..tostring(TierDivisor))
-		log("Highest non-outlier Tier: "..tostring(CalculatedTier))
-		log("Calculated tier bands: "..serpent.block(TierBands))
-		log("Tier band recipe count: "..serpent.block(TierCount))
-	end
+if settings.startup["replication-final-data-logging"].value then
+	log("Tier Band Width: "..tostring(TierDivisor))
+	log("Highest non-outlier Tier: "..tostring(CalculatedTier))
+	log("Calculated tier bands: "..serpent.block(TierBands))
+	log("Tier band recipe count: "..serpent.block(TierCount))
 end
 
 --Recipe and tech generation with ores
@@ -1095,3 +1061,41 @@ if settings.startup["potential-bad-replication-logging"].value then
 	end
 	log("Ending suspicious item logging")
 end
+
+
+--Unused
+
+--[[if settings.startup["use-existing-master-table"].value then
+	MasterTable = require("master-table")
+else
+	MasterTable = { }
+end]]
+
+--Make a checksum for the master table, if we need it
+--[[local function MasterTableChecksum()
+	local ChecksumTable = { }
+	--Log things that we don't need to calculate. Best is more cheaper info over better expensive info, as enough data points will get close enough
+	
+	--Log the modlist
+	
+	--Log the items
+	
+	--Log the recipes
+	
+	--log the mod settings that actually affect generation
+	
+	return ChecksumTable
+end
+
+local MasterTableChecksumMatch = false
+
+if settings.startup["log-master-table"].value or settings.startup["use-existing-master-table"].value then
+	if settings.startup["ignore-master-table-checksum"].value == false then
+		if MasterTable[1] == MasterTableChecksum() then
+			MasterTableChecksumMatch = true
+		end
+	end
+end
+if MasterTable[2] and settings.startup["use-existing-master-table"].value and MasterTableChecksumMatch == true or settings.startup["ignore-master-table-checksum"].value then
+	RepliTableTable = MasterTable[2]
+else]]
