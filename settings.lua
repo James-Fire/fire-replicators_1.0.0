@@ -23,6 +23,14 @@ data:extend({
 		order = "a-3",
 	},
 	{
+		type = "string-setting",
+		name = "item-collection-type",
+		setting_type = "startup",
+		default_value = "recipes",
+		allowed_values =  {"items", "recipes"},
+		order = "ac-1",
+	},
+	{
 		type = "bool-setting",
 		name = "replication-steps-logging",
 		setting_type = "startup",
@@ -58,14 +66,12 @@ data:extend({
 		order = "b-5",
 	},
 	{
-		type = "string-setting",
-		name = "item-collection-type",
+		type = "bool-setting",
+		name = "potential-bad-replication-logging",
 		setting_type = "startup",
-		default_value = "recipes",
-		allowed_values =  {"items", "recipes"},
-		order = "c-1",
-	},
-	{
+		default_value = false,
+		order = "b-6",
+	},{
 		name = "replstats-speed-base",
 		type = "double-setting",
 		order = "1-1-1",

@@ -22,8 +22,8 @@ local RepliOres = { }
 local RepliItems = { }
 local ProcessedRepliItems = { }
 local RepliTableTable = { }
-local BadItemList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe", "item-unknown" }
-local BadRecipePreList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe" }
+local BadItemList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe", "item-unknown", "player-port" }
+local BadRecipePreList = { "loader", "fast-loader", "express-loader", "rocket-part", "infinity-chest", "electric-energy-interface", "infinity-pipe", "player-port" }
 local GoodRecipeList = { }
 local BadRecipeList = { }
 local BadRecipeNameList = { }
@@ -78,24 +78,25 @@ local function CheckRecipeResultTableValue(Item)
 		return false
 	else
 		if data.raw.recipe[Item] then
+			log("Found same name recipe for "..Item)
 			return true
 		else
-			--log("Checking for recipe for "..Item)
+			log("Checking for recipe for "..Item)
 			for i, recipe in pairs(GoodRecipeList) do
-				--log("Checking recipe "..recipe.name.." for "..Item)
+				log("Checking recipe "..recipe.name.." for "..Item)
 				if recipe.results then
 					--log("Recipe "..recipe.name.." has a result table")
 					for j, result in pairs(recipe.results) do
 						
 						if Item == result.name then
-							--log("Found result table production recipe for "..Item)
+							log("Found result table production recipe "..recipe.name.." for "..Item)
 							return true
 						end
 					end
 				elseif recipe.result then
 					--log("Recipe "..recipe.name.." has a single result")
 					if Item == recipe.result.name then
-						--log("Found single-result production recipe for "..Item)
+						log("Found single-result production recipe "..recipe.name.." for "..Item)
 						return true
 					end
 				end
@@ -810,7 +811,7 @@ if settings.startup["item-collection-type"].value == "items" then
 			if CheckTableValue(Item.name, BadItemList) == false then
 				--log(Item.name.." isn't banned")
 				if CheckRecipeResultTableValue(Item.name) == true then
-					--log(Item.name.." has a recipe that makes it")
+					log(Item.name.." has a recipe that makes it")
 					table.insert(RepliItems,Item.name)
 				end
 			end
@@ -1079,13 +1080,18 @@ end
 for i, Item in pairs(RepliItems) do
 	ApplyRecipePrereqs(Item)
 end
-
+--Log the master table
 if settings.startup["replication-final-data-logging"].value then
 	LogAllItemValues()
 end
 
-
---Log a suitable master table with a checksum, entry 1 is the checksum, entry 2 is the master table
-if settings.startup["log-master-table"].value then
-	log(serpent.block())
+--Go through the master table to see if anything is suspicious
+if settings.startup["potential-bad-replication-logging"].value then
+	log("Starting suspicious item logging")
+	for _, entry in pairs(RepliTableTable) do
+		if entry[4] == nil and CheckTableValue(entry[1],RepliOres) == false then 
+			log("Item has no requirements, and isn't an Ore")
+		end
+	end
+	log("Ending suspicious item logging")
 end
