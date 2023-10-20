@@ -1,7 +1,7 @@
 --These are the other mod settings.  They're fairly straightforward.
 data:extend({
 	
-	{
+	--[[{
 		type = "bool-setting",
 		name = "use-existing-master-table",
 		setting_type = "startup",
@@ -21,6 +21,20 @@ data:extend({
 		setting_type = "startup",
 		default_value = false,
 		order = "a-3",
+	},]]
+	{
+		type = "bool-setting",
+		name = "item-breakdown-recipes",
+		setting_type = "startup",
+		default_value = false,
+		order = "a-0",
+	},
+	{
+		type = "bool-setting",
+		name = "item-breakdown-recipes-research",
+		setting_type = "startup",
+		default_value = false,
+		order = "a-0",
 	},
 	{
 		type = "string-setting",

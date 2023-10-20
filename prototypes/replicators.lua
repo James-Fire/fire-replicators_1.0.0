@@ -202,7 +202,7 @@ function make_replicator(tier, research_prerequisites, ingredients)
 			{
 				module_slots = math.max(0, math.floor(module_slots_base + module_slots_addend * (tier-1)))
 			},
-			allowed_effects = {"consumption", "speed", "productivity", "pollution"} --Productivity is only here to allow raw productivity and god modules to be used
+			allowed_effects = {"consumption", "speed", "pollution"}
 		}
 	})
 end
@@ -213,7 +213,6 @@ make_replicator(1,
 	{"dark-matter-scoop"},
 	{
 		{"iron-plate", 4},
-	--	{"electromagnet", 2},
 		{"electronic-circuit", 2},
 		{"dark-matter-scoop", 4},
 	}

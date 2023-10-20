@@ -641,6 +641,7 @@ local function GenerateRepliRecipeAndTech(Item)
 		local ItemOrder = "1"
 		local ItemIcon = "__core__/graphics/empty.png"
 		local ItemIcons = { }
+		local ReverseItemIcons = { }
 		local ItemIconSize = 1
 		local ItemMipMaps = 1
 		if Item.order then
@@ -691,6 +692,9 @@ local function GenerateRepliRecipeAndTech(Item)
 			scale = 1,
 			shift = {0, 0},
 		})
+		for i, icon in pairs(ItemIcons) do
+			table.insert(ReverseItemIcons,icon)
+		end
 		--Tech Name stuff
 		local ItemLocalName = ""
 		if Item.localised_name then
@@ -701,6 +705,9 @@ local function GenerateRepliRecipeAndTech(Item)
 		else
 			ItemLocalName = {"item-name."..Item.name}
 		end
+		--Reverse Recipes tech and enabling
+		local ReverseEnabled = true
+		local ReverseTech = true
 		--log("Replication Value for "..Item.name..": "..tostring(CheckMasterTable(Item.name, 3)))
 		--log("Tech cost for "..Item.name..": "..tostring(round(CheckMasterTable(Item.name, 3)/4)))
 		--log("Icon String for "..Item.name..": "..ItemIcon)
@@ -778,6 +785,37 @@ local function GenerateRepliRecipeAndTech(Item)
 		end
 		--log("Recipe: "..serpent.block(Item.name.."-replication").."  Tech: "..serpent.block(Item.name.."-replication-research"))
 		--log("Generate recipe and tech completed for "..Item.name)
+		if settings.startup["item-breakdown-recipes-research"].value then
+			ReverseEnabled = false
+		end
+		if settings.startup["item-breakdown-recipes"].value then
+			table.insert(ReverseItemIcons,
+			{
+				icon = "__fire-replicators__/graphics/icons/eridium.png",
+				icon_size = 32,
+				scale = 0.5,
+				shift = {8, -8},
+			})
+			data:extend({
+				{
+					type = "recipe",
+					name = Item.name.."-reverse-replication",
+					icons = ReverseItemIcons,
+					category = "Matter-Converter",
+					hidden = true,
+					enabled = ReverseEnabled,
+					energy_required = round(BaseTimeCost*GetReplicationTier(Item.name), 1),
+					ingredients = {
+						{ name = Item.name, amount = 1, type = ItemType },
+					},
+					results = {
+						{type = "fluid", name = "eridium", amount = round(BaseMatterCost*CheckMasterTable(Item.name, 3)*0.9) },
+					},
+					subgroup = "replication-resources",
+					order = "z-1",
+				},
+			})
+		end
 	end
 end
 

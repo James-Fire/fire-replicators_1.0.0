@@ -1,3 +1,11 @@
+local Height = 1
+local BaseArea = 2
+
+if settings.startup["item-breakdown-recipes"].value then
+	Height = 10000
+	BaseArea = 2000
+end
+
 local function round(num, numDecimalPlaces)
 	local mult = 10^(numDecimalPlaces or 0)
 	return math.ceil(num * mult + 0.5) / mult
@@ -31,6 +39,7 @@ local function addMatterConverter(tier, NumTiers)
 	Matter_converter.energy_usage = tostring((2*tier)).."MW"
 	Matter_converter.energy_source.emissions_per_minute = 0
 	Matter_converter.crafting_speed = tier
+	--Matter_converter.source_inventory_size = 5
 	Matter_converter.minable.result = "Matter-Converter-"..tostring(tier)
 	Matter_converter.fluid_boxes =
     {
@@ -47,7 +56,8 @@ local function addMatterConverter(tier, NumTiers)
         production_type = "output",
         pipe_picture = assembler3pipepictures(),
         pipe_covers = pipecoverspictures(),
-        base_area = 2,
+		height = Height,
+        base_area = BaseArea,
         base_level = 1,
         pipe_connections = {{ type="output", position = {0, 2} }},
         secondary_draw_orders = { north = -1 }
