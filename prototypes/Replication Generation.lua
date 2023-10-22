@@ -788,7 +788,7 @@ local function GenerateRepliRecipeAndTech(Item)
 		if settings.startup["item-breakdown-recipes-research"].value then
 			ReverseEnabled = false
 		end
-		if settings.startup["item-breakdown-recipes"].value then
+		if settings.startup["item-breakdown-recipes"].value and CheckTableValue(Item.name,RepliOres) == false then
 			table.insert(ReverseItemIcons,
 			{
 				icon = "__fire-replicators__/graphics/icons/eridium.png",
