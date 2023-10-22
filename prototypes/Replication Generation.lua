@@ -73,25 +73,25 @@ local function CheckRecipeResultTableValue(Item)
 		return false
 	else
 		if data.raw.recipe[Item] then
-			log("Found same name recipe for "..Item)
+			--log("Found same name recipe for "..Item)
 			return true
 		else
 			log("Checking for recipe for "..Item)
 			for i, recipe in pairs(GoodRecipeList) do
-				log("Checking recipe "..recipe.name.." for "..Item)
+				--log("Checking recipe "..recipe.name.." for "..Item)
 				if recipe.results then
 					--log("Recipe "..recipe.name.." has a result table")
 					for j, result in pairs(recipe.results) do
 						
 						if Item == result.name then
-							log("Found result table production recipe "..recipe.name.." for "..Item)
+							--log("Found result table production recipe "..recipe.name.." for "..Item)
 							return true
 						end
 					end
 				elseif recipe.result then
 					--log("Recipe "..recipe.name.." has a single result")
 					if Item == recipe.result.name then
-						log("Found single-result production recipe "..recipe.name.." for "..Item)
+						--log("Found single-result production recipe "..recipe.name.." for "..Item)
 						return true
 					end
 				end
@@ -146,7 +146,7 @@ local function RecipeStringMatch(RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	elseif RecipeName:find("liquefaction", 1, true) or RecipeName:find("request", 1, true) then
+	elseif RecipeName:find("liquefaction", 1, true) or RecipeName:find("request-", 1, true) then
 		--log("Found liquefaction recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
