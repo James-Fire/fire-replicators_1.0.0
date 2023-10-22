@@ -784,7 +784,7 @@ local function GenerateRepliRecipeAndTech(Item)
 					},
 				},
 				unit = {
-					count = GetReplicationTier(Item.name)*10,
+					count = GetReplicationTier(Item.name)*GetReplicationTier(Item.name)*10,
 					ingredients = {
 						{"tenemut", 4},
 					},
