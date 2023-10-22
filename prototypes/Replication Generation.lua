@@ -23,6 +23,8 @@ local GoodRecipeList = { }
 local BadRecipeList = { }
 local BadRecipeNameList = { }
 local BadRecipeCategories = { "forcefield-crafter" }
+local Items = { "item", "fluid", "module", "tool", "ammo", "capsule", "armor", "gun", "rail-planner", "repair-tool", "item-with-entity-data", "spidertron-remote" }
+local RocketLaunchItems = { }
 
 local function round(num, numDecimalPlaces)
 	local mult = 10^(numDecimalPlaces or 0)
@@ -390,28 +392,28 @@ end
 	end
 end]]
 
-local function FindItemRecipe(Item)
+local function FindItemRecipe(ItemName)
 	local RecipeTable = { }
-	if data.raw.recipe[Item] then
-		if NotBannedRecipe(data.raw.recipe[Item]) == true then
-			if CheckTableValue(data.raw.recipe[Item],RecipeTable) == false then
-				table.insert(RecipeTable,data.raw.recipe[Item])
+	if data.raw.recipe[ItemName] then
+		if NotBannedRecipe(data.raw.recipe[ItemName]) == true then
+			if CheckTableValue(data.raw.recipe[ItemName],RecipeTable) == false then
+				table.insert(RecipeTable,data.raw.recipe[ItemName])
 			end
 		end
 	end
 	for i, recipe in pairs(GoodRecipeList) do
 		if CheckTableValue(recipe,RecipeTable) == false then
-			if recipe.main_product == Item then
+			if recipe.main_product == ItemName then
 					table.insert(RecipeTable,recipe)
 			else
 				if recipe.results then
 					for i, result_data in pairs(recipe.results) do
-						if (result_data.name or result_data[1]) == Item then
+						if (result_data.name or result_data[1]) == ItemName then
 							table.insert(RecipeTable,recipe)
 						end
 					end
 				elseif recipe.result then
-					if recipe.result == Item then
+					if recipe.result == ItemName then
 						table.insert(RecipeTable,recipe)
 					end
 				end
@@ -430,6 +432,20 @@ local function FindItemRecipe(Item)
 		end
 	end
 	return RecipeTable
+end
+
+local function FindRocketLaunchItem(ItemName)
+	for i, Item in pairs(RocketLaunchItems) do
+		--log("Checking Item: "..Item.name)
+		if CheckTableValue(Item.name, BadItemList) == false and Item.rocket_launch_product then
+			--log(Item.name.." isn't banned and has a rocket launch product")
+			if Item.rocket_launch_product[1] == ItemName then
+				--log(Item.name.." has a item that launches into it")
+				return Item
+			end
+		end
+	end
+	return nil
 end
 
 local function CheckMasterTable(Item, ReturnValue) --1 returns the item string, 2 returns the tier integer, 3 returns the value integer, 4 returns the prereq table, 5 returns the unlock tech
@@ -493,7 +509,21 @@ end
 local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 	--log(Item.." started")
 	local Recipe = FindItemRecipe(Item)[1]
-	if Recipe and CheckTableValue(Recipe,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
+	local RocketLaunchItem = FindRocketLaunchItem(Item)
+	if RocketLaunchItem then
+		local ItemTier = 0 --Item tier determines some multiplicative stuff.
+		local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
+		if CheckMasterTable(RocketLaunchItem.name, 1) then
+			ItemTier = (CheckMasterTable(RocketLaunchItem.name, 2)+1)
+			IngredientsValue = (CheckMasterTable(RocketLaunchItem.name, 3)/RocketLaunchItem.rocket_launch_product[2])
+		else 
+			local ReplicationValues = GetRecipeIngredientBreakdown(RocketLaunchItem,PrevRecipeTable)
+			ItemTier = ReplicationValues[2]
+			IngredientsValue = ReplicationValues[3]/RocketLaunchItem.rocket_launch_product[2]
+		end
+		table.insert(RepliTableTable,{ Item, ItemTier, IngredientsValue, {RocketLaunchItem.name} })
+		return { Item, ItemTier, IngredientsValue }
+	elseif Recipe and CheckTableValue(Recipe,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
 		--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
 		local ItemTier = 0 --Item tier determines some multiplicative stuff.
 		local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
@@ -511,7 +541,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 			table.insert(PrevRecipeTable,Recipe.name)
 			--log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
 			local resultcount = 1
-			local ingreditentstable = { }
+			local ingredientstable = { }
 			if recipe_data.results then
 				for i, result in pairs(recipe_data.results) do
 					if result.count then
@@ -543,7 +573,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 				if ingredient.probability then
 					--ingredientcount = ingredientcount*ingredient/probability
 				end
-				table.insert(ingreditentstable,ingredientindex)
+				table.insert(ingredientstable,ingredientindex)
 				--log(ingredientindex.." for "..Recipe.name)
 				if CheckMasterTable(ingredientindex, 1) then
 					--log(ingredientindex.." present on masterlist")
@@ -589,13 +619,13 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 					end
 				end
 			end
-			--log("Recipe ingredients name table for "..Recipe.name.." "..serpent.block(ingreditentstable))
+			--log("Recipe ingredients name table for "..Recipe.name.." "..serpent.block(ingredientstable))
 			--log(Recipe.name.." completed")
 			--log(Item.." matter cost: "..(IngredientsValue/resultcount))
 			if CheckTableValue( Item,RepliTableTable,1 ) == false then
-				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingreditentstable })
+				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable })
 			end
-			return { Item, ItemTier+1, IngredientsValue }
+			return { Item, ItemTier+1, IngredientsValue/resultcount }
 		end
 	end
 	--[[else
@@ -837,7 +867,6 @@ if settings.startup["replication-steps-logging"].value then
 	log("Starting item collection")
 end
 if settings.startup["item-collection-type"].value == "items" then
-	local Items = { "item", "fluid", "module", "tool", "ammo", "capsule", "armor", "gun", "rail-planner", "repair-tool", "item-with-entity-data", "spidertron-remote" }
 	for i, ItemType in pairs(Items) do
 		for j, Item in pairs(data.raw[ItemType]) do
 			--log("Checking Item: "..Item.name)
@@ -846,6 +875,14 @@ if settings.startup["item-collection-type"].value == "items" then
 				if CheckRecipeResultTableValue(Item.name) == true then
 					log(Item.name.." has a recipe that makes it")
 					table.insert(RepliItems,Item.name)
+				end
+				if Item.rocket_launch_product then
+					log(Item.name.." has a rocket launch product"..Item.rocket_launch_product[1])
+					table.insert(RocketLaunchItems,Item)
+					if CheckTableValue(Item.rocket_launch_product[1], RepliItems) == false then
+						table.insert(RepliItems,Item.rocket_launch_product[1])
+					end
+					table.insert(RepliItems,Item)
 				end
 			end
 		end
