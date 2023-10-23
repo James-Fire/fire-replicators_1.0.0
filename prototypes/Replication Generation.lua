@@ -80,7 +80,7 @@ local function CheckRecipeResultTableValue(Item)
 		else
 			log("Checking for recipe for "..Item)
 			for i, recipe in pairs(GoodRecipeList) do
-				--log("Checking recipe "..recipe.name.." for "..Item)
+				log("Checking recipe "..recipe.name.." for "..Item)
 				if recipe.results then
 					--log("Recipe "..recipe.name.." has a result table")
 					for j, result in pairs(recipe.results) do
@@ -92,7 +92,7 @@ local function CheckRecipeResultTableValue(Item)
 					end
 				elseif recipe.result then
 					--log("Recipe "..recipe.name.." has a single result")
-					if Item == recipe.result.name then
+					if Item == recipe.result then
 						--log("Found single-result production recipe "..recipe.name.." for "..Item)
 						return true
 					end
@@ -176,7 +176,7 @@ local function RecipeStringMatch(RecipeName)
 	return false
 end
 local function ItemStringMatch(ItemName)
-	if ItemName:find("interface", 1, true) or ItemName:find("infinity", 1, true) then
+	if ItemName:find("interface", 1, true) or ItemName:find("infinity", 1, true) or ItemName:find("dummy", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
