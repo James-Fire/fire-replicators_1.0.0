@@ -415,14 +415,18 @@ local function FindItemRecipe(ItemName)
 			if recipe.main_product == ItemName then
 					table.insert(RecipeTable,recipe)
 			else
-				if recipe.results then
-					for i, result_data in pairs(recipe.results) do
+				local recipe_data = recipe
+				if recipe.normal then
+					recipe_data = recipe.normal
+				end
+				if recipe_data.results then
+					for i, result_data in pairs(recipe_data.results) do
 						if (result_data.name or result_data[1]) == ItemName then
 							table.insert(RecipeTable,recipe)
 						end
 					end
-				elseif recipe.result then
-					if recipe.result == ItemName then
+				elseif recipe_data.result then
+					if recipe_data.result == ItemName then
 						table.insert(RecipeTable,recipe)
 					end
 				end
@@ -517,8 +521,8 @@ end
 --Make sure to save it somewhere so we aren't repeating this, cause this is expensive.
 local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 	--log(Item.." started")
-	if Item:find("chip", 1, true) == true or Item:find("copper-electronic", 1, true) == true then
-		log(Item.." started")
+	if Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) then
+		--log(Item.." started")
 	end
 	local Recipe = FindItemRecipe(Item)[1]
 	local RocketLaunchItem = FindRocketLaunchItem(Item)
@@ -611,7 +615,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 					local FoundRecipe = false
 					for j, ingredientrecipe in pairs(IngredRecipe) do
 						if ingredientrecipe and FoundRecipe == false then
-							log(ingredientrecipe.name.." ingredient for "..Item)
+							--log(ingredientrecipe.name.." ingredient for "..Item)
 							if CheckTableValue(ingredientrecipe.name,PrevRecipeTable) == false then
 								local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
 								if FoundOre == false and i == 1 then
@@ -620,7 +624,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 								IngredientsValue = IngredientsValue + ReplicationValues[3]/AddedMatterCostDivisor
 								FoundRecipe = true
 							else
-								log("Recipe Loop for "..Item..", aborting")
+								--log("Recipe Loop for "..Item..", aborting")
 							end
 						else
 						end
@@ -636,7 +640,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 			--log(Item.." matter cost: "..(IngredientsValue/resultcount))
 			if CheckTableValue( Item,RepliTableTable,1 ) == false then
 				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable })
-				if Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) == true then
+				if Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) then
 					--log(serpent.block({ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable }))
 				end
 			end
@@ -884,27 +888,15 @@ end
 if settings.startup["item-collection-type"].value == "items" then
 	for i, ItemType in pairs(Items) do
 		for j, Item in pairs(data.raw[ItemType]) do
-			if Item.name:find("chip", 1, true) then
-				log(Item.name.." isn't banned")
-			end
-			if Item.name:find("-electronic", 1, true) then
-				log(Item.name.." isn't banned")
-			end
 			--log("Checking Item: "..Item.name)
 			if CheckTableValue(Item.name, BadItemList) == false then
 				--log(Item.name.." isn't banned")
-				if Item.name:find("chip", 1, true) then
-					log(Item.name.." isn't banned")
-				end
-				if Item.name:find("-electronic", 1, true) then
-					log(Item.name.." isn't banned")
-				end
 				if CheckRecipeResultTableValue(Item.name) == true then
-					log(Item.name.." has a recipe that makes it")
+					--log(Item.name.." has a recipe that makes it")
 					table.insert(RepliItems,Item.name)
 				end
 				if Item.rocket_launch_product then
-					log(Item.name.." has a rocket launch product"..Item.rocket_launch_product[1])
+					--log(Item.name.." has a rocket launch product"..Item.rocket_launch_product[1])
 					table.insert(RocketLaunchItems,Item.name)
 					if CheckTableValue(Item.rocket_launch_product[1], RepliItems) == false then
 						table.insert(RepliItems,Item.rocket_launch_product[1])
@@ -1155,8 +1147,16 @@ if settings.startup["replication-final-data-logging"].value then
 end
 --Log the bad items table
 if settings.startup["replication-final-data-logging"].value then
+	log("Starting bad item logging")
 	for _, entry in pairs(BadItemList) do
 		log(entry.." Item is considered bad")
+	end
+end
+--Log the bad recipes table
+if settings.startup["replication-final-data-logging"].value then
+	log("Starting bad recipe logging")
+	for _, entry in pairs(BadRecipeNameList) do
+		log(entry.." recipe is considered bad")
 	end
 end
 
