@@ -78,21 +78,24 @@ local function CheckRecipeResultTableValue(Item)
 			--log("Found same name recipe for "..Item)
 			return true
 		else
-			log("Checking for recipe for "..Item)
+			--log("Checking for recipe for "..Item)
 			for i, recipe in pairs(GoodRecipeList) do
-				log("Checking recipe "..recipe.name.." for "..Item)
-				if recipe.results then
+				--log("Checking recipe "..recipe.name.." for "..Item)
+				local recipe_data = recipe
+				if recipe.normal then
+					recipe_data = recipe.normal
+				end
+				if recipe_data.results then
 					--log("Recipe "..recipe.name.." has a result table")
-					for j, result in pairs(recipe.results) do
-						
+					for j, result in pairs(recipe_data.results) do
 						if Item == result.name then
 							--log("Found result table production recipe "..recipe.name.." for "..Item)
 							return true
 						end
 					end
-				elseif recipe.result then
+				elseif recipe_data.result then
 					--log("Recipe "..recipe.name.." has a single result")
-					if Item == recipe.result then
+					if Item == recipe_data.result then
 						--log("Found single-result production recipe "..recipe.name.." for "..Item)
 						return true
 					end
@@ -129,7 +132,7 @@ end
 local function RecipeStringMatch(RecipeName)
 	--log("String Match Recipe "..RecipeName)
 	if RecipeName:find("fp-da", 1, true) then
-		--log("Found scrap recipe "..RecipeName)
+		--log("Found Fluid Permutation recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
@@ -169,6 +172,10 @@ local function RecipeStringMatch(RecipeName)
 			return true
 		end
 	elseif RecipeName:find("person", 1, true) then
+		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
+			return true
+		end
+	elseif RecipeName:find("lower-bin-tier", 1, true) then
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
@@ -218,11 +225,13 @@ end
 
 for i, Item in pairs(data.raw.item) do
 	if ItemStringMatch(Item.name) then
+		log("Found bad item "..Item.name)
 		table.insert(BadItemList, Item.name)
 	end
 end
 for i, Fluid in pairs(data.raw.fluid) do
 	if FluidStringMatch(Fluid.name) then
+		log("Found bad fluid "..Fluid.name)
 		table.insert(BadItemList, Fluid.name)
 	end
 end
@@ -309,7 +318,7 @@ if settings.startup["item-collection-type"].value == "items" then
 	for i, Recipe in pairs(data.raw.recipe) do
 		--log("Checking "..Recipe.name)
 		if RecipeBadnessTest(Recipe) then
-			--log(Recipe.name.." is bad")
+			log(Recipe.name.." is bad")
 			table.insert(BadRecipeList, Recipe)
 			table.insert(BadRecipeNameList, Recipe.name)
 		end
@@ -508,6 +517,9 @@ end
 --Make sure to save it somewhere so we aren't repeating this, cause this is expensive.
 local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 	--log(Item.." started")
+	if Item:find("chip", 1, true) == true or Item:find("copper-electronic", 1, true) == true then
+		log(Item.." started")
+	end
 	local Recipe = FindItemRecipe(Item)[1]
 	local RocketLaunchItem = FindRocketLaunchItem(Item)
 	if RocketLaunchItem then
@@ -599,7 +611,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 					local FoundRecipe = false
 					for j, ingredientrecipe in pairs(IngredRecipe) do
 						if ingredientrecipe and FoundRecipe == false then
-							--log(ingredientrecipe.name.." ingredient for "..Item)
+							log(ingredientrecipe.name.." ingredient for "..Item)
 							if CheckTableValue(ingredientrecipe.name,PrevRecipeTable) == false then
 								local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
 								if FoundOre == false and i == 1 then
@@ -608,7 +620,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 								IngredientsValue = IngredientsValue + ReplicationValues[3]/AddedMatterCostDivisor
 								FoundRecipe = true
 							else
-								--log("Recipe Loop, aborting")
+								log("Recipe Loop for "..Item..", aborting")
 							end
 						else
 						end
@@ -624,6 +636,9 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 			--log(Item.." matter cost: "..(IngredientsValue/resultcount))
 			if CheckTableValue( Item,RepliTableTable,1 ) == false then
 				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable })
+				if Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) == true then
+					--log(serpent.block({ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable }))
+				end
 			end
 			return { Item, ItemTier+1, IngredientsValue/resultcount }
 		end
@@ -869,20 +884,32 @@ end
 if settings.startup["item-collection-type"].value == "items" then
 	for i, ItemType in pairs(Items) do
 		for j, Item in pairs(data.raw[ItemType]) do
+			if Item.name:find("chip", 1, true) then
+				log(Item.name.." isn't banned")
+			end
+			if Item.name:find("-electronic", 1, true) then
+				log(Item.name.." isn't banned")
+			end
 			--log("Checking Item: "..Item.name)
 			if CheckTableValue(Item.name, BadItemList) == false then
 				--log(Item.name.." isn't banned")
+				if Item.name:find("chip", 1, true) then
+					log(Item.name.." isn't banned")
+				end
+				if Item.name:find("-electronic", 1, true) then
+					log(Item.name.." isn't banned")
+				end
 				if CheckRecipeResultTableValue(Item.name) == true then
 					log(Item.name.." has a recipe that makes it")
 					table.insert(RepliItems,Item.name)
 				end
 				if Item.rocket_launch_product then
 					log(Item.name.." has a rocket launch product"..Item.rocket_launch_product[1])
-					table.insert(RocketLaunchItems,Item)
+					table.insert(RocketLaunchItems,Item.name)
 					if CheckTableValue(Item.rocket_launch_product[1], RepliItems) == false then
 						table.insert(RepliItems,Item.rocket_launch_product[1])
 					end
-					table.insert(RepliItems,Item)
+					table.insert(RepliItems,Item.name)
 				end
 			end
 		end
@@ -931,6 +958,7 @@ end
 --Make sure no ores are in the item table
 for i, Item in pairs(RepliItems) do
 	if CheckTableValue(Item,RepliOres) == true then
+		log(Item.." is actually an ore")
 		RepliItems[i] = nil
 	end
 end
@@ -1125,13 +1153,30 @@ end
 if settings.startup["replication-final-data-logging"].value then
 	LogAllItemValues()
 end
+--Log the bad items table
+if settings.startup["replication-final-data-logging"].value then
+	for _, entry in pairs(BadItemList) do
+		log(entry.." Item is considered bad")
+	end
+end
 
 --Go through the master table to see if anything is suspicious
 if settings.startup["potential-bad-replication-logging"].value then
+	--1 returns the item string, 2 returns the tier integer, 3 returns the value integer, 4 returns the prereq table, 5 returns the unlock tech
 	log("Starting suspicious item logging")
 	for _, entry in pairs(RepliTableTable) do
 		if entry[4] == nil and CheckTableValue(entry[1],RepliOres) == false then 
-			log("Item has no requirements, and isn't an Ore")
+			log(entry[1]..": Item has no requirements, and isn't an Ore")
+		end
+		if entry[3] == 0 and CheckTableValue(entry[1],RepliOres) == false then 
+			log(entry[1]..": Item has no cost")
+		end
+		if entry[4] then
+			for _, Item in pairs(entry[4]) do
+				if CheckMasterTable(Item, 1) == false then
+					log(entry[1].." Item has requirement "..Item.." that is not calculated")
+				end
+			end
 		end
 	end
 	log("Ending suspicious item logging")
