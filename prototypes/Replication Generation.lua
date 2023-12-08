@@ -146,11 +146,11 @@ local function RecipeStringMatch(RecipeName)
 				end
 			end
 		end
-	elseif RecipeName:find("reforming", 1, true) or RecipeName:find("cracking", 1, true) then
+	--[[elseif RecipeName:find("reforming", 1, true) or RecipeName:find("cracking", 1, true) then
 		--log("Found cracking recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
-		end
+		end]]
 	elseif RecipeName:find("liquefaction", 1, true) or RecipeName:find("request-", 1, true) then
 		--log("Found liquefaction recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
@@ -449,11 +449,11 @@ end
 
 local function FindRocketLaunchItem(ItemName)
 	for i, Item in pairs(RocketLaunchItems) do
-		--log("Checking Item: "..Item.name)
-		if CheckTableValue(Item.name, BadItemList) == false and Item.rocket_launch_product then
-			--log(Item.name.." isn't banned and has a rocket launch product")
+		log("Checking Item: "..Item.." for rocket launch soure of "..ItemName)
+		if (not CheckTableValue(Item, BadItemList)) and Item.rocket_launch_product then
+			log(Item.." isn't banned and has a rocket launch product")
 			if Item.rocket_launch_product[1] == ItemName then
-				--log(Item.name.." has a item that launches into it")
+				log(Item.." has a item that launches into it")
 				return Item
 			end
 		end
@@ -527,6 +527,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 	local Recipe = FindItemRecipe(Item)[1]
 	local RocketLaunchItem = FindRocketLaunchItem(Item)
 	if RocketLaunchItem then
+		log(Item.." is a rocket launch product")
 		local ItemTier = 0 --Item tier determines some multiplicative stuff.
 		local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
 		if CheckMasterTable(RocketLaunchItem.name, 1) then
@@ -537,7 +538,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 			ItemTier = ReplicationValues[2]
 			IngredientsValue = ReplicationValues[3]/RocketLaunchItem.rocket_launch_product[2]
 		end
-		table.insert(RepliTableTable,{ Item, ItemTier, IngredientsValue, {RocketLaunchItem.name} })
+		table.insert(RepliTableTable,{ Item, ItemTier, IngredientsValue, {RocketLaunchItem} })
 		return { Item, ItemTier, IngredientsValue }
 	elseif Recipe and CheckTableValue(Recipe,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
 		--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
@@ -1030,7 +1031,7 @@ table.sort(TierTable)
 for i, Tier in pairs(HighestTier) do
 	if Tier > (2*Median(TierTable)) then
 		if settings.startup["replication-tier-calculation-logging"].value then
-			log("Tier "..Tier.." is more than 2x higher than "..tostring(Median(TierTable))..", tossing")
+			log("Tier "..Tier.." is more than 2x higher than the Median "..tostring(Median(TierTable))..", tossing")
 		end
 	else
 		if settings.startup["replication-tier-calculation-logging"].value then
