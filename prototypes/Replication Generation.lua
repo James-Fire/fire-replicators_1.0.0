@@ -448,15 +448,9 @@ local function FindItemRecipe(ItemName)
 end
 
 local function FindRocketLaunchItem(ItemName)
-	for i, Item in pairs(RocketLaunchItems) do
-		log("Checking Item: "..Item.." for rocket launch soure of "..ItemName)
-		if (not CheckTableValue(Item, BadItemList)) and Item.rocket_launch_product then
-			log(Item.." isn't banned and has a rocket launch product")
-			if Item.rocket_launch_product[1] == ItemName then
-				log(Item.." has a item that launches into it")
-				return Item
-			end
-		end
+	local LaunchItem = RocketLaunchItems[ItemName]
+	if LaunchItem then
+		return LaunchItem
 	end
 	return nil
 end
@@ -534,11 +528,11 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 			ItemTier = (CheckMasterTable(RocketLaunchItem.name, 2)+1)
 			IngredientsValue = (CheckMasterTable(RocketLaunchItem.name, 3)/RocketLaunchItem.rocket_launch_product[2])
 		else 
-			local ReplicationValues = GetRecipeIngredientBreakdown(RocketLaunchItem,PrevRecipeTable)
+			local ReplicationValues = GetRecipeIngredientBreakdown(RocketLaunchItem.name,PrevRecipeTable)
 			ItemTier = ReplicationValues[2]
 			IngredientsValue = ReplicationValues[3]/RocketLaunchItem.rocket_launch_product[2]
 		end
-		table.insert(RepliTableTable,{ Item, ItemTier, IngredientsValue, {RocketLaunchItem} })
+		table.insert(RepliTableTable,{ Item, ItemTier, IngredientsValue, {RocketLaunchItem.name} })
 		return { Item, ItemTier, IngredientsValue }
 	elseif Recipe and CheckTableValue(Recipe,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
 		--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
@@ -898,7 +892,7 @@ if settings.startup["item-collection-type"].value == "items" then
 				end
 				if Item.rocket_launch_product then
 					--log(Item.name.." has a rocket launch product"..Item.rocket_launch_product[1])
-					table.insert(RocketLaunchItems,Item.name)
+					RocketLaunchItems[Item.rocket_launch_product[1]] = Item
 					if CheckTableValue(Item.rocket_launch_product[1], RepliItems) == false then
 						table.insert(RepliItems,Item.rocket_launch_product[1])
 					end
