@@ -4,7 +4,7 @@
 local speed_base = settings.startup["replstats-speed-base"].value
 local energy_base = settings.startup["replstats-energy-base"].value
 local pollution_base = settings.startup["replstats-pollution-base"].value
-local size_base = settings.startup["replstats-size-base"].value
+local size_base = 2
 local module_slots_base = settings.startup["replstats-modules-base"].value
 
 --Every time the replictor tier increases by 1 its stats are multiplied by these numbers
@@ -14,7 +14,6 @@ local pollution_factor = settings.startup["replstats-pollution-factor"].value
 
 --Every time the replictor tier increases by 1 its stats are added to these numbers
 --Both of these are rounded down after addition
-local size_addend = settings.startup["replstats-size-addend"].value 
 local module_slots_addend = settings.startup["replstats-modules-addend"].value
 
 --Research settings
@@ -40,7 +39,7 @@ function make_replicator(tier, research_prerequisites, ingredients)
 	local power_consumption = (energy_base * energy_factor^(tier-1))
 	
 	--Calculate the size values
-	local entity_corner = math.max(1, math.floor(size_base + size_addend * (tier-1))) / 2
+	local entity_corner = size_base
 	local hitbox_corner = entity_corner - 0.2
 	local pipe_connector_offset = 0
 	--You can't center a fluid pipe on an even-sized edge, so nudge the connection point half a square to the left if that's the case
