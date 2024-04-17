@@ -44,49 +44,6 @@ data:extend({
 		allowed_values =  {"items", "recipes"},
 		order = "a-2",
 	},
-	--Logging settings
-	{
-		type = "bool-setting",
-		name = "replication-steps-logging",
-		setting_type = "startup",
-		default_value = false,
-		order = "b-1",
-	},
-	{
-		type = "bool-setting",
-		name = "replication-final-data-logging",
-		setting_type = "startup",
-		default_value = false,
-		order = "b-2",
-	},
-	{
-		type = "bool-setting",
-		name = "replication-value-calculation-logging",
-		setting_type = "startup",
-		default_value = false,
-		order = "b-3",
-	},
-	{
-		type = "bool-setting",
-		name = "replication-recipe-tech-generation-logging",
-		setting_type = "startup",
-		default_value = false,
-		order = "b-4",
-	},
-	{
-		type = "bool-setting",
-		name = "replication-tier-calculation-logging",
-		setting_type = "startup",
-		default_value = false,
-		order = "b-5",
-	},
-	{
-		type = "bool-setting",
-		name = "potential-bad-replication-logging",
-		setting_type = "startup",
-		default_value = false,
-		order = "b-6",
-	},
 	--Replicaiton Settings
 	--Settings for:
 	--Whether placeable items can be replicated? Buildings and vehicles
@@ -148,6 +105,14 @@ data:extend({
 		setting_type = "startup",
 		default_value = true,
 		order = "d-3",
+	},
+	{ --How much matter is used to make 1 piece of ore, or 25 fluid resource, which is used as the base for determining item replication costs
+		name = "base-matter-cost",
+		type = "double-setting",
+		setting_type = "startup",
+		default_value = 5,
+		minimum_value = 0.01
+		order = "d-5",
 	},
 	{ --Multiply all liquid matter values by this amount.
 		name = "liquid-matter-required",
@@ -236,5 +201,65 @@ data:extend({
 		setting_type = "startup",
 		default_value = 0.5
 		order = "1-5-3",
+	},
+	--Replication settings
+	{ --How much higher tier items increase their replication time by
+		name = "replication-tier-time",
+		type = "double-setting",
+		setting_type = "startup",
+		default_value = 1,
+		minimum_value = 0.001
+		order = "1-1-1",
+	},
+	{ --How many replication tiers are generated. More tiers means more complex items take way longer.
+		name = "replication-max-tier",
+		type = "int-setting",
+		setting_type = "startup",
+		default_value = 5,
+		minimum_value = 5
+		order = "1-1-1",
+	},
+	--Logging settings
+	{
+		type = "bool-setting",
+		name = "replication-steps-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "z-1",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-final-data-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "z-2",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-value-calculation-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "z-3",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-recipe-tech-generation-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "z-4",
+	},
+	{
+		type = "bool-setting",
+		name = "replication-tier-calculation-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "z-5",
+	},
+	{
+		type = "bool-setting",
+		name = "potential-bad-replication-logging",
+		setting_type = "startup",
+		default_value = false,
+		order = "z-6",
 	},
 })

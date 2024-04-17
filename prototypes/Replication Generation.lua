@@ -1,16 +1,16 @@
 log(settings.startup["item-collection-type"].value)
 
 if settings.startup["replication-steps-logging"].value then
-	log("Starting variable initialization")
+	log("Starting variable and function initialization")
 end
 
-local BaseMatterCost = 5 --How much matter is used to make 1 piece of ore  --settings.startup["tiberium-damage"].value
+local BaseMatterCost = settings.startup["base-matter-cost"].value --How much matter is used to make 1 piece of ore
 local AddedMatterCostDivisor = 1.5 --How much to divide ingredient values by. It's easier to make the final product directly?
 local BaseTimeCost = 5 --How much time is used to make 1 piece of ore, also the tech research time.  --settings.startup["tiberium-damage"].value
 local TierTimeFactor = 0.8 --Exponent to make time curve flatter
 local ItemTimeFactor = 1.2 --How much the time is increased per unique ore used to make the product normally, unused right now
-local MaxTier = 5 --The max tier that we can generate.
-local TierDivisor = 1 --How many tiers of items are in each tier band
+local MaxTier = settings.startup["replication-max-tier"].value --The max tier that we can generate. Currently only 5 will work, probably.
+local TierDivisor = 1 --How many tiers of items are in each tier band. Is calculated by code, not set here.
 local TierBands = { 1, 2, 3, 4, 5 }
 
 local RepliOres = { }
