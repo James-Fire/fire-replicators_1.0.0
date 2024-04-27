@@ -4,8 +4,8 @@ if settings.startup["replication-steps-logging"].value then
 	log("Starting variable and function initialization")
 end
 
-local BaseMatterCost = settings.startup["base-matter-cost"].value --How much matter is used to make 1 piece of ore
-local AddedMatterCostDivisor = 1.5 --How much to divide ingredient values by. It's easier to make the final product directly?
+local BaseMatterCost = settings.startup["base-matter-cost"].value * settings.startup["liquid-matter-required"].value * settings.startup["liquid-matter-used"].value --How much matter is used to make 1 piece of ore
+local AddedMatterCostDivisor = 1 --How much to divide ingredient values by. It's easier to make the final product directly?
 local BaseTimeCost = 5 --How much time is used to make 1 piece of ore, also the tech research time.  --settings.startup["tiberium-damage"].value
 local TierTimeFactor = 0.8 --Exponent to make time curve flatter
 local ItemTimeFactor = 1.2 --How much the time is increased per unique ore used to make the product normally, unused right now
@@ -476,7 +476,7 @@ local function addMatterRecipe(ore)
 	end
 	if ore:find("eridium", 1, true) then
 		recipeName = "regenerative-matter"
-		oreAmount = 4
+		oreAmount = 4 * settings.startup["liquid-matter-required"].value
 		energy = 10
 	else
 	end
@@ -487,7 +487,7 @@ local function addMatterRecipe(ore)
 	else
 		LSlib.recipe.addIngredient(recipeName, ore, oreAmount, itemOrFluid)
 	end
-	LSlib.recipe.addResult(recipeName, "eridium", BaseMatterCost, "fluid")
+	LSlib.recipe.addResult(recipeName, "eridium", BaseMatterCost * settings.startup["liquid-matter-generated"].value, "fluid")
 	LSlib.recipe.setMainResult(recipeName, "eridium")
 	LSlib.recipe.setEnergyRequired(recipeName, energy)
 	LSlib.recipe.setOrderstring(recipeName, order)
@@ -829,10 +829,10 @@ local function GenerateRepliRecipeAndTech(Item)
 		end
 		--log("Recipe: "..serpent.block(Item.name.."-replication").."  Tech: "..serpent.block(Item.name.."-replication-research"))
 		--log("Generate recipe and tech completed for "..Item.name)
-		if settings.startup["item-breakdown-recipes-research"].value then
+		if settings.startup["matter-converters-melting-research"].value then
 			ReverseEnabled = false
 		end
-		if settings.startup["item-breakdown-recipes"].value and CheckTableValue(Item.name,RepliOres) == false then
+		if settings.startup["matter-converters-melting"].value and CheckTableValue(Item.name,RepliOres) == false then
 			table.insert(ReverseItemIcons,
 			{
 				icon = "__fire-replicators__/graphics/icons/eridium.png",
@@ -967,10 +967,14 @@ table.insert(RepliTableTable,{ "steam", 1, 2, {"water"} })
 if settings.startup["replication-steps-logging"].value then
 	log("Starting Matter Conversion recipes")
 end
-for i, Item in pairs(RepliOres) do
-	addMatterRecipe(Item)
+
+
+if settings.startup["liquid-matter"].value then
+	for i, Item in pairs(RepliOres) do
+		addMatterRecipe(Item)
+	end
+	addMatterRecipe("eridium")
 end
-addMatterRecipe("eridium")
 
 --Calculate item values
 if settings.startup["replication-steps-logging"].value then

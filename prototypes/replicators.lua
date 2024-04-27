@@ -17,8 +17,8 @@ local pollution_factor = settings.startup["replstats-pollution-factor"].value
 local module_slots_addend = settings.startup["replstats-modules-addend"].value
 
 --Research settings
-local reps_multiplier = settings.startup["replresearch-tier-multiplier"].value
-local research_time = settings.startup["replresearch-tier-time"].value
+local reps_multiplier = 1
+local research_time = 1
 
 
 function make_replicator(tier, research_prerequisites, ingredients)
@@ -39,7 +39,7 @@ function make_replicator(tier, research_prerequisites, ingredients)
 	local power_consumption = (energy_base * energy_factor^(tier-1))
 	
 	--Calculate the size values
-	local entity_corner = size_base
+	local entity_corner = size_base*0.5
 	local hitbox_corner = entity_corner - 0.2
 	local pipe_connector_offset = 0
 	--You can't center a fluid pipe on an even-sized edge, so nudge the connection point half a square to the left if that's the case

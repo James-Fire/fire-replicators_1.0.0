@@ -23,20 +23,6 @@ data:extend({
 		order = "a-3",
 	},]]
 	{
-		type = "bool-setting",
-		name = "item-breakdown-recipes",
-		setting_type = "startup",
-		default_value = false,
-		order = "a-0",
-	},
-	{
-		type = "bool-setting",
-		name = "item-breakdown-recipes-research",
-		setting_type = "startup",
-		default_value = false,
-		order = "a-1",
-	},
-	{
 		type = "string-setting",
 		name = "item-collection-type",
 		setting_type = "startup",
@@ -106,12 +92,19 @@ data:extend({
 		default_value = true,
 		order = "d-3",
 	},
+	{ --Whether the melting recipes need the research
+		type = "bool-setting",
+		name = "matter-converters-melting-research",
+		setting_type = "startup",
+		default_value = false,
+		order = "d-4",
+	},
 	{ --How much matter is used to make 1 piece of ore, or 25 fluid resource, which is used as the base for determining item replication costs
 		name = "base-matter-cost",
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 5,
-		minimum_value = 0.01
+		minimum_value = 0.01,
 		order = "d-5",
 	},
 	{ --Multiply all liquid matter values by this amount.
@@ -119,24 +112,24 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 1,
-		minimum_value = 0.01
-		order = "d-5",
+		minimum_value = 0.01,
+		order = "d-6",
 	},
 	{ --Multiply all liquid matter generation values by this amount.
 		name = "liquid-matter-generated",
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 1,
-		minimum_value = 0.01
-		order = "d-6",
+		minimum_value = 0.01,
+		order = "d-7",
 	},
 	{ --Multiply all replication liquid matter values by this amount.
 		name = "liquid-matter-used",
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 1,
-		minimum_value = 0.01
-		order = "d-7",
+		minimum_value = 0.01,
+		order = "d-8",
 	},
 	--Replicator Settings
 	{
@@ -144,7 +137,7 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 1,
-		minimum_value = 0.001
+		minimum_value = 0.001,
 		order = "1-1-1",
 	},
 	{
@@ -152,7 +145,7 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 2,
-		minimum_value = 0.001
+		minimum_value = 0.001,
 		order = "1-1-2",
 	},
 	{
@@ -160,7 +153,7 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 256,
-		minimum_value = 0.001
+		minimum_value = 0.001,
 		order = "1-2-1",
 	},
 	{
@@ -168,7 +161,7 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 2.5,
-		minimum_value = 0.001
+		minimum_value = 0.001,
 		order = "1-2-2",
 	},
 	{
@@ -176,7 +169,7 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 5.5,
-		minimum_value = 0
+		minimum_value = 0,
 		order = "1-3-1",
 	},
 	{
@@ -184,7 +177,7 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 2.75,
-		minimum_value = 0
+		minimum_value = 0,
 		order = "1-3-2",
 	},
 	{
@@ -192,14 +185,14 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 1,
-		minimum_value = 0
+		minimum_value = 0,
 		order = "1-5-1",
 	},
 	{
 		name = "replstats-modules-addend",
 		type = "double-setting",
 		setting_type = "startup",
-		default_value = 0.5
+		default_value = 0.5,
 		order = "1-5-3",
 	},
 	--Replication settings
@@ -208,7 +201,7 @@ data:extend({
 		type = "double-setting",
 		setting_type = "startup",
 		default_value = 1,
-		minimum_value = 0.001
+		minimum_value = 0.001,
 		order = "1-1-1",
 	},
 	{ --How many replication tiers are generated. More tiers means more complex items take way longer.
@@ -216,7 +209,7 @@ data:extend({
 		type = "int-setting",
 		setting_type = "startup",
 		default_value = 5,
-		minimum_value = 5
+		minimum_value = 5,
 		order = "1-1-1",
 	},
 	--Logging settings
