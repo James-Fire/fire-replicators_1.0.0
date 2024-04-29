@@ -1,7 +1,7 @@
 local Height = 1
 local BaseArea = 2
 
-if settings.startup["item-breakdown-recipes"].value then
+if settings.startup["matter-converters-melting"].value then
 	Height = 10000
 	BaseArea = 2000
 end
