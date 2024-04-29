@@ -235,23 +235,28 @@ local function RocketLaunchRecipe(Recipe)
 	end
 	if recipe_data.results then
 		for i, Result in pairs(recipe_data.results) do
-			if data.raw.item[Result] and data.raw.item[Result].rocket_launch_product then
-				table.insert(RocketLaunchItems, data.raw.item[Result].rocket_launch_product[1])
+			local ingredientindex = nil
+			if Result.name then
+				ingredientindex = Result.name
+			else
+				ingredientindex = Result[1]
+			end
+			if data.raw.item[ingredientindex] then
+				if data.raw.item[ingredientindex].rocket_launch_product then
+					table.insert(RocketLaunchItems, ingredientindex)
+					table.insert(RocketLaunchItems, data.raw.item[ingredientindex].rocket_launch_product[1])
+				end
 			end
 		end
 	end
 	if recipe_data.result then
 		if data.raw.item[recipe_data.result] and data.raw.item[recipe_data.result].rocket_launch_product then
+			table.insert(RocketLaunchItems, recipe_data.result)
 			table.insert(RocketLaunchItems, data.raw.item[recipe_data.result].rocket_launch_product[1])
 		end
 	end
-	if RocketLaunchItems then
-		for i, RocketItem in pairs(RocketLaunchItems) do
-			if CheckTableValue(RocketItem,recipe_data.ingredients) == true then
-				table.insert(RocketLaunchItems, Recipe.name)
-			end
-		end
-	end
+	
+	--log("Duplicate Items in "..Recipe.name..":"..serpent.block(RocketLaunchItems))
 	return RocketLaunchItems
 end
 
@@ -544,20 +549,22 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		else
 			recipe_data = Recipe
 		end
-		--log(Recipe.name.." started")
+		log(Recipe.name.." started")
 		--log("Previous Recipes:"..serpent.block(PrevRecipeTable))
-		local IgnoredItems = RocketLaunchRecipe(Recipe)
-		for i, Ignored in pairs(GlobalIgnoredItems) do
+		local IgnoredItems = GlobalIgnoredItems
+		for i, Ignored in pairs(RocketLaunchRecipe(Recipe)) do
 			table.insert(IgnoredItems,Ignored)
 		end
+		log("Ignored Items for "..Recipe.name..":"..serpent.block(IgnoredItems))
 		if recipe_data.ingredients then
 			table.insert(PrevRecipeTable,Recipe.name)
 			--log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
-			local resultcount = 1
+			local resultcount = 0
 			local ingredientstable = { }
 			if recipe_data.results then
 				for i, result in pairs(recipe_data.results) do
-					if CheckTableValue(result,IgnoredItems) == false then
+					if CheckTableValue(result.name,IgnoredItems) == false then
+						log(serpent.block(result).." is not ignored")
 						if result.count then
 							resultcount = resultcount + result.count
 						elseif result.amount then
@@ -566,21 +573,25 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 					end
 				end
 			elseif recipe_data.result then
-				if CheckTableValue(result,IgnoredItems) == false then
+				if CheckTableValue(recipe_data.result,IgnoredItems) == false then
+					log(recipe_data.result.." is not ignored")
 					if recipe_data.result_count then
 						resultcount = recipe_data.result_count
 					end
 				end
 			end
+			if resultcount == 0 then
+				resultcount = 1
+			end
 			for i, ingredient in pairs(recipe_data.ingredients) do
-				if CheckTableValue(ingredient,IgnoredItems) == false  then
-					local ingredientindex = nil
-					local ingredientcount = nil
-					if ingredient.name then
-						ingredientindex = ingredient.name
-					else
-						ingredientindex = ingredient[1]
-					end
+				local ingredientindex = nil
+				local ingredientcount = nil
+				if ingredient.name then
+					ingredientindex = ingredient.name
+				else
+					ingredientindex = ingredient[1]
+				end
+				if CheckTableValue(ingredientindex,IgnoredItems) == false then
 					if ingredient.count then
 						ingredientcount = ingredient.count
 					elseif ingredient.amount then
@@ -636,11 +647,17 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 							IngredientsValue = IngredientsValue*2 --For now
 						end
 					end
+					--[[if Item:find("fabricator", 1, true) then
+						log("Ingredient "..ingredientindex.." for "..Item)
+						log("Value: "..IngredientsValue + ingredientcount/AddedMatterCostDivisor*CheckMasterTable(ingredientindex, 3))
+						log("Value values: "..IngredientsValue..", "..ingredientcount..", "..AddedMatterCostDivisor..", "..CheckMasterTable(ingredientindex, 3))
+					end]]
 				end
 			end
 			--log("Recipe ingredients name table for "..Recipe.name.." "..serpent.block(ingredientstable))
 			--log(Recipe.name.." completed")
 			--log(Item.." matter cost: "..(IngredientsValue/resultcount))
+			--log(Item.." matter values: "..IngredientsValue..", "..resultcount)
 			if CheckTableValue( Item,RepliTableTable,1 ) == false then
 				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable })
 				if Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) then

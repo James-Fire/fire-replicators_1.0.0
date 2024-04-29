@@ -168,7 +168,7 @@ data:extend({
 		name = "replstats-pollution-base",
 		type = "double-setting",
 		setting_type = "startup",
-		default_value = 5.5,
+		default_value = 0,
 		minimum_value = 0,
 		order = "1-3-1",
 	},
@@ -225,6 +225,7 @@ data:extend({
 		name = "replication-final-data-logging",
 		setting_type = "startup",
 		default_value = false,
+		--hidden = true,
 		order = "z-2",
 	},
 	{
