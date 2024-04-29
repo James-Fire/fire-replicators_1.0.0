@@ -26,6 +26,7 @@ local BadRecipeCategories = { "forcefield-crafter" }
 local Items = { "item", "fluid", "module", "tool", "ammo", "capsule", "armor", "gun", "rail-planner", "repair-tool", "item-with-entity-data", "spidertron-remote" }
 local RocketLaunchItems = { }
 local RocketLaunchRecipeNameList = { }
+local GlobalIgnoredItems = { }
 
 local function round(num, numDecimalPlaces)
 	local mult = 10^(numDecimalPlaces or 0)
@@ -258,6 +259,7 @@ for i, Item in pairs(data.raw.item) do
 	if ItemStringMatch(Item.name) then
 		log("Found bad item "..Item.name)
 		table.insert(BadItemList, Item.name)
+		table.insert(GlobalIgnoredItems, Item.name)
 	end
 end
 for i, Fluid in pairs(data.raw.fluid) do
@@ -545,6 +547,9 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		--log(Recipe.name.." started")
 		--log("Previous Recipes:"..serpent.block(PrevRecipeTable))
 		local IgnoredItems = RocketLaunchRecipe(Recipe)
+		for i, Ignored in pairs(GlobalIgnoredItems) do
+			table.insert(IgnoredItems,Ignored)
+		end
 		if recipe_data.ingredients then
 			table.insert(PrevRecipeTable,Recipe.name)
 			--log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
