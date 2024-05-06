@@ -8,7 +8,7 @@ data:extend(
 	flags = {},
 	subgroup = "raw-resource",
 	order = "f[tenemut]",
-	stack_size = 200,
+	stack_size = 100,
 	durability = 1,
 	durability_description_key = "description.science-pack-remaining-amount"
 },
