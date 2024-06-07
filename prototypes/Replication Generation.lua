@@ -201,7 +201,7 @@ local function ItemStringMatch(ItemName)
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
-	elseif ItemName:find("person", 1, true) or ItemName:find("seed", 1, true) then
+	elseif ItemName:find("person", 1, true) or ItemName:find("seed", 1, true) or ItemName:find("population", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
@@ -299,7 +299,7 @@ local function RecipeBadnessTest(Recipe)
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
 			end
-		elseif Recipe.category:find("person", 1, true) then
+		elseif Recipe.category:find("person", 1, true) or Recipe.category:find("tiberium", 1, true) then
 			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
