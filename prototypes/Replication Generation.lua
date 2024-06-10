@@ -869,6 +869,7 @@ local function GenerateRepliRecipeAndTech(Item)
 				{
 					type = "recipe",
 					name = Item.name.."-reverse-replication",
+					localised_name = { "recipe-name.reverse-replication", ItemLocalName },
 					icons = ReverseItemIcons,
 					category = "Matter-Converter",
 					hidden = true,
