@@ -193,6 +193,10 @@ local function ItemStringMatch(ItemName)
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
+	elseif ItemName:find("dropship", 1, true) then
+		if CheckTableValue(ItemName,BadItemList) == false then
+			return true
+		end
 	elseif ItemName:find("recycle", 1, true) or ItemName:find("recycling", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
@@ -948,19 +952,43 @@ end]]
 if settings.startup["replication-steps-logging"].value then
 	log("Starting resource collection")
 end
-for _, resourceData in pairs(data.raw.resource) do
-	--Exclude infinite mining stuff. RecipeName:"liquefaction")
-	if resourceData.category and (resourceData.category:find("deep", 1, true) or resourceData.category:find("core", 1, true)) and (resourceData.category:find("mining", 1, true) or resourceData.category:find("mine", 1, true)) then
 
-	elseif resourceData.autoplace and resourceData.minable then
+local function BadOreCategoryCheck(OreCategory)
+	if (OreCategory:find("deep", 1, true) or OreCategory:find("core", 1, true)) then
+		if (OreCategory:find("mining", 1, true) or OreCategory:find("mine", 1, true)) then
+			return true
+		end
+	end
+	return false
+end
+for _, resourceData in pairs(data.raw.resource) do
+	log("Ore "..tostring(resourceData.name))
+	log(serpent.block(resourceData))
+	if resourceData.category then
+		if BadOreCategoryCheck(resourceData.category) then
+			log("Ore is bad")
+		elseif resourceData.minable then
+			log("Ore Item "..tostring(resourceData.minable.result))
+			table.insert(RepliOres,resourceData.minable.result)
+			if resourceData.minable.results then
+				for _, result in pairs(resourceData.minable.results) do 
+					log(result.name)
+					table.insert(RepliOres,result.name)
+				end
+			end
+		end
+	elseif resourceData.minable then
+		log("Ore Item "..tostring(resourceData.minable.result))
 		table.insert(RepliOres,resourceData.minable.result)
 		if resourceData.minable.results then
 			for _, result in pairs(resourceData.minable.results) do 
+				log(result.name)
 				table.insert(RepliOres,result.name)
 			end
 		end
 	end
 end
+
 --Insert wood manually, if it's not already there
 if CheckTableValue("wood",RepliOres) == false then
 	table.insert(RepliOres, "wood")
