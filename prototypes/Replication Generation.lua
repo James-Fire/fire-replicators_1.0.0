@@ -314,6 +314,11 @@ local function RecipeBadnessTest(Recipe)
 				table.insert(BadRecipeCategories, Recipe.category)
 				return true
 			end
+		elseif Recipe.category:find("mining", 1, true) and Recipe.category:find("depot", 1, true) then
+			if CheckTableValue(Recipe.category,BadRecipeCategories) == false then
+				table.insert(BadRecipeCategories, Recipe.category)
+				return true
+			end
 		end
 	end
 end
