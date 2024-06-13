@@ -163,7 +163,7 @@ local function RecipeStringMatch(RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	elseif RecipeName:find("joule", 1, true) then
+	elseif RecipeName:find("joule", 1, true) or RecipeName:find("void", 1, true) then
 		--log("Found scrap recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
@@ -197,7 +197,7 @@ local function ItemStringMatch(ItemName)
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
-	elseif ItemName:find("recycle", 1, true) or ItemName:find("recycling", 1, true) then
+	elseif ItemName:find("recycle", 1, true) or ItemName:find("recycling", 1, true) or ItemName:find("void", 1, true) then
 		if CheckTableValue(ItemName,BadItemList) == false then
 			return true
 		end
@@ -523,13 +523,23 @@ local function addMatterRecipe(ore)
 	end]]
 end
 
+local function LogItem(Item)
+	--[[if Item:find("uranium", 1, true) then
+		return true
+	--elseif Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) then
+		--return true
+	end]]
+	return false
+end
+
 --Basically just determine how many steps from ore the item is by following its ingredients. Look for the shortest appearance of ore.
 --Make sure to save it somewhere so we aren't repeating this, cause this is expensive.
 local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
-	--log(Item.." started")
-	if Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) then
-		--log(Item.." started")
+	
+	if Logging then
+		log(Item.." started")
 	end
+	local Logging = LogItem(Item)
 	local Recipe = FindItemRecipe(Item)[1]
 	local RocketLaunchItem = FindRocketLaunchItem(Item)
 	if RocketLaunchItem then
@@ -552,6 +562,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
 		local UniqueIngredients = { 0 } --How many unique resources make up the item, unused right now.
 		local FoundOre = false
+		local ProbabilityMult = 1
 		local recipe_data = Recipe
 		if Recipe.normal then
 			recipe_data = Recipe.normal
@@ -564,33 +575,50 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		for i, Ignored in pairs(RocketLaunchRecipe(Recipe)) do
 			table.insert(IgnoredItems,Ignored)
 		end
-		log("Ignored Items for "..Recipe.name..":"..serpent.block(IgnoredItems))
+		--log("Ignored Items for "..Recipe.name..":"..serpent.block(IgnoredItems))
 		if recipe_data.ingredients then
 			table.insert(PrevRecipeTable,Recipe.name)
 			--log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
 			local resultcount = 0
 			local ingredientstable = { }
 			if recipe_data.results then
+				if Logging then
+					log(serpent.block(recipe_data.results))
+				end
 				for i, result in pairs(recipe_data.results) do
 					if CheckTableValue(result.name,IgnoredItems) == false then
-						log(serpent.block(result).." is not ignored")
+						--log(serpent.block(result).." is not ignored")
 						if result.count then
 							resultcount = resultcount + result.count
 						elseif result.amount then
 							resultcount = resultcount + result.amount
 						end
+						if result.probability and (result.name == Item) then
+							ProbabilityMult = result.probability
+							resultcount = resultcount*result.probability
+						end
 					end
 				end
 			elseif recipe_data.result then
+				if Logging then
+					log(serpent.block(recipe_data))
+				end
 				if CheckTableValue(recipe_data.result,IgnoredItems) == false then
 					log(recipe_data.result.." is not ignored")
 					if recipe_data.result_count then
 						resultcount = recipe_data.result_count
 					end
+					if recipe_data.result.probability and (recipe_data.result.name == Item) then
+						ProbabilityMult = recipe_data.result.probability
+						resultcount = resultcount*recipe_data.result.probability
+					end
 				end
 			end
 			if resultcount == 0 then
 				resultcount = 1
+			end
+			if Logging then
+				log(Item.." probability: "..ProbabilityMult)
 			end
 			for i, ingredient in pairs(recipe_data.ingredients) do
 				local ingredientindex = nil
@@ -607,9 +635,6 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 						ingredientcount = ingredient.amount
 					else
 						ingredientcount = ingredient[2]
-					end
-					if ingredient.probability then
-						--ingredientcount = ingredientcount*ingredient/probability
 					end
 					table.insert(ingredientstable,ingredientindex)
 					--log(ingredientindex.." for "..Recipe.name)
@@ -668,9 +693,9 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 			--log(Item.." matter cost: "..(IngredientsValue/resultcount))
 			--log(Item.." matter values: "..IngredientsValue..", "..resultcount)
 			if CheckTableValue( Item,RepliTableTable,1 ) == false then
-				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable })
-				if Item:find("chip", 1, true) or Item:find("copper-electronic", 1, true) then
-					--log(serpent.block({ Item, ItemTier+1, IngredientsValue/resultcount, ingredientstable }))
+				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount/ProbabilityMult, ingredientstable })
+				if Logging then
+					log(serpent.block({ Item, ItemTier+1, IngredientsValue/resultcount/ProbabilityMult, ingredientstable }))
 				end
 			end
 			return { Item, ItemTier+1, IngredientsValue/resultcount }
@@ -962,13 +987,13 @@ local function BadOreCategoryCheck(OreCategory)
 	return false
 end
 for _, resourceData in pairs(data.raw.resource) do
-	log("Ore "..tostring(resourceData.name))
-	log(serpent.block(resourceData))
+	--log("Ore "..tostring(resourceData.name))
+	--log(serpent.block(resourceData))
 	if resourceData.category then
 		if BadOreCategoryCheck(resourceData.category) then
-			log("Ore is bad")
+			--log("Ore is bad")
 		elseif resourceData.minable then
-			log("Ore Item "..tostring(resourceData.minable.result))
+			--log("Ore Item "..tostring(resourceData.minable.result))
 			table.insert(RepliOres,resourceData.minable.result)
 			if resourceData.minable.results then
 				for _, result in pairs(resourceData.minable.results) do 
@@ -978,7 +1003,7 @@ for _, resourceData in pairs(data.raw.resource) do
 			end
 		end
 	elseif resourceData.minable then
-		log("Ore Item "..tostring(resourceData.minable.result))
+		--log("Ore Item "..tostring(resourceData.minable.result))
 		table.insert(RepliOres,resourceData.minable.result)
 		if resourceData.minable.results then
 			for _, result in pairs(resourceData.minable.results) do 
