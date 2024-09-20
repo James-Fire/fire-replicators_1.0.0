@@ -556,7 +556,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		end
 		table.insert(RepliTableTable,{ Item, ItemTier, IngredientsValue, {RocketLaunchItem.name} })
 		return { Item, ItemTier, IngredientsValue }
-	elseif Recipe and CheckTableValue(Recipe,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
+	elseif Recipe and CheckTableValue(Recipe.name,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
 		--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
 		local ItemTier = 0 --Item tier determines some multiplicative stuff.
 		local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
@@ -651,18 +651,21 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 							ItemTier = CheckMasterTable(ingredientindex, 2) + 1
 						end
 						IngredientsValue = IngredientsValue + ingredientcount/AddedMatterCostDivisor
+					--elseif Recipe.name:find("bin", 1, true) then
+					
 					else
-						--log(ingredientindex.." not present on masterlist, and isn't ore")
+						log(ingredientindex.." not present on masterlist, and isn't ore")
 						local IngredRecipe = FindItemRecipe(ingredientindex)
 						local IngredRecipeName = { }
 						for j, ingredientrecipe in pairs(IngredRecipe) do
 							table.insert(IngredRecipeName,ingredientrecipe.name)
 						end
-						--log("All recipes that make "..ingredientindex..serpent.block(IngredRecipeName))
+						log("All recipes that make "..ingredientindex..serpent.block(IngredRecipeName))
 						local FoundRecipe = false
 						for j, ingredientrecipe in pairs(IngredRecipe) do
 							if ingredientrecipe and FoundRecipe == false then
-								--log(ingredientrecipe.name.." ingredient for "..Item)
+								log(ingredientindex.." ingredient for "..Item)
+								log(ingredientrecipe.name.." recipe for "..Item)
 								if CheckTableValue(ingredientrecipe.name,PrevRecipeTable) == false then
 									local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
 									if FoundOre == false and i == 1 then
@@ -671,7 +674,7 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 									IngredientsValue = IngredientsValue + ReplicationValues[3]/AddedMatterCostDivisor
 									FoundRecipe = true
 								else
-									--log("Recipe Loop for "..Item..", aborting")
+									log("Recipe Loop for "..Item..", aborting")
 								end
 							else
 							end
