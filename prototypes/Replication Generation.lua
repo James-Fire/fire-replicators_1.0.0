@@ -153,7 +153,7 @@ local function RecipeStringMatch(RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end]]
-	elseif RecipeName:find("liquefaction", 1, true) or RecipeName:find("request-", 1, true) then
+	elseif RecipeName:find("liquefaction", 1, true) or RecipeName:find("request-", 1, true) or RecipeName:find("broken", 1, true) then
 		--log("Found liquefaction recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
@@ -163,7 +163,7 @@ local function RecipeStringMatch(RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
 		end
-	elseif RecipeName:find("joule", 1, true) or RecipeName:find("void", 1, true) then
+	elseif RecipeName:find("joule", 1, true) or RecipeName:find("void", 1, true) or RecipeName:find("enrichment", 1, true) then
 		--log("Found scrap recipe "..RecipeName)
 		if CheckTableValue(RecipeName,BadRecipeNameList) == false then
 			return true
@@ -535,12 +535,14 @@ end
 --Basically just determine how many steps from ore the item is by following its ingredients. Look for the shortest appearance of ore.
 --Make sure to save it somewhere so we aren't repeating this, cause this is expensive.
 local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
-	
+	log(Item.." started")
+	log("Previous Recipes:"..serpent.block(PrevRecipeTable))
 	if Logging then
 		log(Item.." started")
 	end
 	local Logging = LogItem(Item)
-	local Recipe = FindItemRecipe(Item)[1]
+	local Recipes = FindItemRecipe(Item)
+	--log(Recipe.name.." found for "..Item)
 	local RocketLaunchItem = FindRocketLaunchItem(Item)
 	if RocketLaunchItem then
 		log(Item.." is a rocket launch product")
@@ -556,153 +558,159 @@ local function GetRecipeIngredientBreakdown(Item, PrevRecipeTable)
 		end
 		table.insert(RepliTableTable,{ Item, ItemTier, IngredientsValue, {RocketLaunchItem.name} })
 		return { Item, ItemTier, IngredientsValue }
-	elseif Recipe and CheckTableValue(Recipe.name,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
-		--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
-		local ItemTier = 0 --Item tier determines some multiplicative stuff.
-		local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
-		local UniqueIngredients = { 0 } --How many unique resources make up the item, unused right now.
-		local FoundOre = false
-		local ProbabilityMult = 1
-		local recipe_data = Recipe
-		if Recipe.normal then
-			recipe_data = Recipe.normal
-		else
-			recipe_data = Recipe
-		end
-		log(Recipe.name.." started")
-		--log("Previous Recipes:"..serpent.block(PrevRecipeTable))
-		local IgnoredItems = GlobalIgnoredItems
-		for i, Ignored in pairs(RocketLaunchRecipe(Recipe)) do
-			table.insert(IgnoredItems,Ignored)
-		end
-		--log("Ignored Items for "..Recipe.name..":"..serpent.block(IgnoredItems))
-		if recipe_data.ingredients then
-			table.insert(PrevRecipeTable,Recipe.name)
-			--log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
-			local resultcount = 0
-			local ingredientstable = { }
-			if recipe_data.results then
-				if Logging then
-					log(serpent.block(recipe_data.results))
-				end
-				for i, result in pairs(recipe_data.results) do
-					if CheckTableValue(result.name,IgnoredItems) == false then
-						--log(serpent.block(result).." is not ignored")
-						if result.count then
-							resultcount = resultcount + result.count
-						elseif result.amount then
-							resultcount = resultcount + result.amount
-						end
-						if result.probability and (result.name == Item) then
-							ProbabilityMult = result.probability
-							resultcount = resultcount*result.probability
-						end
-					end
-				end
-			elseif recipe_data.result then
-				if Logging then
-					log(serpent.block(recipe_data))
-				end
-				if CheckTableValue(recipe_data.result,IgnoredItems) == false then
-					log(recipe_data.result.." is not ignored")
-					if recipe_data.result_count then
-						resultcount = recipe_data.result_count
-					end
-					if recipe_data.result.probability and (recipe_data.result.name == Item) then
-						ProbabilityMult = recipe_data.result.probability
-						resultcount = resultcount*recipe_data.result.probability
-					end
-				end
-			end
-			if resultcount == 0 then
-				resultcount = 1
-			end
-			if Logging then
-				log(Item.." probability: "..ProbabilityMult)
-			end
-			for i, ingredient in pairs(recipe_data.ingredients) do
-				local ingredientindex = nil
-				local ingredientcount = nil
-				if ingredient.name then
-					ingredientindex = ingredient.name
+	elseif Recipes then
+		for h, Recipe in pairs(Recipes) do
+			if CheckTableValue(Recipe.name,PrevRecipeTable) == false then --Check if the recipe exists, cause it might not for whatever reason
+				--log("Master Table before "..Recipe.name.." breakdown "..serpent.block(RepliTableTable))
+				local ItemTier = 0 --Item tier determines some multiplicative stuff.
+				local IngredientsValue = 0 --How much liquid Matter you need to replicate the item
+				local UniqueIngredients = { 0 } --How many unique resources make up the item, unused right now.
+				local FoundOre = false
+				local ProbabilityMult = 1
+				local recipe_data = Recipe
+				if Recipe.normal then
+					recipe_data = Recipe.normal
 				else
-					ingredientindex = ingredient[1]
+					recipe_data = Recipe
 				end
-				if CheckTableValue(ingredientindex,IgnoredItems) == false then
-					if ingredient.count then
-						ingredientcount = ingredient.count
-					elseif ingredient.amount then
-						ingredientcount = ingredient.amount
-					else
-						ingredientcount = ingredient[2]
-					end
-					table.insert(ingredientstable,ingredientindex)
-					--log(ingredientindex.." for "..Recipe.name)
-					if CheckMasterTable(ingredientindex, 1) then
-						--log(ingredientindex.." present on masterlist")
-						if FoundOre == false and i == 1 then
-							ItemTier = ItemTier + CheckMasterTable(ingredientindex, 2) + 1
+				log(Recipe.name.." started")
+				local IgnoredItems = GlobalIgnoredItems
+				for i, Ignored in pairs(RocketLaunchRecipe(Recipe)) do
+					table.insert(IgnoredItems,Ignored)
+				end
+				--log("Ignored Items for "..Recipe.name..":"..serpent.block(IgnoredItems))
+				if recipe_data.ingredients then
+					table.insert(PrevRecipeTable,Recipe.name)
+					log("ingredients for "..Recipe.name.." "..serpent.block(recipe_data.ingredients))
+					local resultcount = 0
+					local ingredientstable = { }
+					if recipe_data.results then
+						if Logging then
+							log(serpent.block(recipe_data.results))
 						end
-						IngredientsValue = IngredientsValue + ingredientcount/AddedMatterCostDivisor*CheckMasterTable(ingredientindex, 3)
-					elseif CheckTableValue(ingredientindex,RepliOres) == true then
-						--log(ingredientindex.." not present on masterlist, and is ore")
-						FoundOre = true
-						if FoundOre == false and i == 1 then
-							ItemTier = CheckMasterTable(ingredientindex, 2) + 1
-						end
-						IngredientsValue = IngredientsValue + ingredientcount/AddedMatterCostDivisor
-					--elseif Recipe.name:find("bin", 1, true) then
-					
-					else
-						log(ingredientindex.." not present on masterlist, and isn't ore")
-						local IngredRecipe = FindItemRecipe(ingredientindex)
-						local IngredRecipeName = { }
-						for j, ingredientrecipe in pairs(IngredRecipe) do
-							table.insert(IngredRecipeName,ingredientrecipe.name)
-						end
-						log("All recipes that make "..ingredientindex..serpent.block(IngredRecipeName))
-						local FoundRecipe = false
-						for j, ingredientrecipe in pairs(IngredRecipe) do
-							if ingredientrecipe and FoundRecipe == false then
-								log(ingredientindex.." ingredient for "..Item)
-								log(ingredientrecipe.name.." recipe for "..Item)
-								if CheckTableValue(ingredientrecipe.name,PrevRecipeTable) == false then
-									local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
-									if FoundOre == false and i == 1 then
-										ItemTier = ItemTier + ReplicationValues[2]
-									end
-									IngredientsValue = IngredientsValue + ReplicationValues[3]/AddedMatterCostDivisor
-									FoundRecipe = true
-								else
-									log("Recipe Loop for "..Item..", aborting")
+						for i, result in pairs(recipe_data.results) do
+							if CheckTableValue(result.name,IgnoredItems) == false then
+								--log(serpent.block(result).." is not ignored")
+								if result.count then
+									resultcount = resultcount + result.count
+								elseif result.amount then
+									resultcount = resultcount + result.amount
 								end
-							else
+								if result.probability and (result.name == Item) then
+									ProbabilityMult = result.probability
+									resultcount = resultcount*result.probability
+								end
 							end
 						end
-						if FoundRecipe == false then
-							--log(ingredientindex.." has no recipe to make it")
-							IngredientsValue = IngredientsValue*2 --For now
+					elseif recipe_data.result then
+						if Logging then
+							log(serpent.block(recipe_data))
+						end
+						if CheckTableValue(recipe_data.result,IgnoredItems) == false then
+							--log(recipe_data.result.." is not ignored")
+							if recipe_data.result_count then
+								resultcount = recipe_data.result_count
+							end
+							if recipe_data.result.probability and (recipe_data.result.name == Item) then
+								ProbabilityMult = recipe_data.result.probability
+								resultcount = resultcount*recipe_data.result.probability
+							end
 						end
 					end
-					--[[if Item:find("fabricator", 1, true) then
-						log("Ingredient "..ingredientindex.." for "..Item)
-						log("Value: "..IngredientsValue + ingredientcount/AddedMatterCostDivisor*CheckMasterTable(ingredientindex, 3))
-						log("Value values: "..IngredientsValue..", "..ingredientcount..", "..AddedMatterCostDivisor..", "..CheckMasterTable(ingredientindex, 3))
-					end]]
+					if resultcount == 0 then
+						resultcount = 1
+					end
+					if Logging then
+						log(Item.." probability: "..ProbabilityMult)
+					end
+					for i, ingredient in pairs(recipe_data.ingredients) do
+						local ingredientindex = nil
+						local ingredientcount = nil
+						if ingredient.name then
+							ingredientindex = ingredient.name
+						else
+							ingredientindex = ingredient[1]
+						end
+						if CheckTableValue(ingredientindex,IgnoredItems) == false then
+							if ingredient.count then
+								ingredientcount = ingredient.count
+							elseif ingredient.amount then
+								ingredientcount = ingredient.amount
+							else
+								ingredientcount = ingredient[2]
+							end
+							table.insert(ingredientstable,ingredientindex)
+							--log(ingredientindex.." for "..Recipe.name)
+							if CheckMasterTable(ingredientindex, 1) then
+								--log(ingredientindex.." present on masterlist")
+								if FoundOre == false and i == 1 then
+									ItemTier = ItemTier + CheckMasterTable(ingredientindex, 2) + 1
+								end
+								IngredientsValue = IngredientsValue + ingredientcount/AddedMatterCostDivisor*CheckMasterTable(ingredientindex, 3)
+							elseif CheckTableValue(ingredientindex,RepliOres) == true then
+								--log(ingredientindex.." not present on masterlist, and is ore")
+								FoundOre = true
+								if FoundOre == false and i == 1 then
+									ItemTier = CheckMasterTable(ingredientindex, 2) + 1
+								end
+								IngredientsValue = IngredientsValue + ingredientcount/AddedMatterCostDivisor
+							--elseif Recipe.name:find("bin", 1, true) then
+							
+							else
+								log(ingredientindex.." not present on masterlist, and isn't ore")
+								local IngredRecipe = FindItemRecipe(ingredientindex)
+								local IngredRecipeName = { }
+								for j, ingredientrecipe in pairs(IngredRecipe) do
+									table.insert(IngredRecipeName,ingredientrecipe.name)
+								end
+								log("All recipes that make "..ingredientindex..serpent.block(IngredRecipeName))
+								local FoundRecipe = false
+								for j, ingredientrecipe in pairs(IngredRecipe) do
+									if ingredientrecipe and FoundRecipe == false then
+										log(ingredientindex.." ingredient for "..Item)
+										log(ingredientrecipe.name.." recipe for "..Item)
+										if CheckTableValue(ingredientrecipe.name,PrevRecipeTable) == false then
+											local ReplicationValues = GetRecipeIngredientBreakdown(ingredientindex, PrevRecipeTable)
+											if FoundOre == false and i == 1 then
+												ItemTier = ItemTier + ReplicationValues[2]
+											end
+											IngredientsValue = IngredientsValue + ReplicationValues[3]/AddedMatterCostDivisor
+											FoundRecipe = true
+										else
+											log("Recipe Loop for "..Item..", aborting")
+										end
+									else
+									end
+								end
+								if FoundRecipe == false then
+									--log(ingredientindex.." has no recipe to make it")
+									IngredientsValue = IngredientsValue*2 --For now
+								end
+							end
+							--[[if Item:find("fabricator", 1, true) then
+								log("Ingredient "..ingredientindex.." for "..Item)
+								log("Value: "..IngredientsValue + ingredientcount/AddedMatterCostDivisor*CheckMasterTable(ingredientindex, 3))
+								log("Value values: "..IngredientsValue..", "..ingredientcount..", "..AddedMatterCostDivisor..", "..CheckMasterTable(ingredientindex, 3))
+							end]]
+						end
+					end
+					log("Recipe ingredients name table for "..Recipe.name.." "..serpent.block(ingredientstable))
+					log(Recipe.name.." completed")
+					log(Item.." matter cost: "..(IngredientsValue/resultcount))
+					log(Item.." matter values: "..IngredientsValue..", "..resultcount)
+					if CheckTableValue( Item,RepliTableTable,1 ) == false then
+						table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount/ProbabilityMult, ingredientstable })
+						if Logging then
+							log(serpent.block({ Item, ItemTier+1, IngredientsValue/resultcount/ProbabilityMult, ingredientstable }))
+						end
+					end
+					return { Item, ItemTier+1, IngredientsValue/resultcount }
 				end
+				break
 			end
-			--log("Recipe ingredients name table for "..Recipe.name.." "..serpent.block(ingredientstable))
-			--log(Recipe.name.." completed")
-			--log(Item.." matter cost: "..(IngredientsValue/resultcount))
-			--log(Item.." matter values: "..IngredientsValue..", "..resultcount)
-			if CheckTableValue( Item,RepliTableTable,1 ) == false then
-				table.insert(RepliTableTable,{ Item, ItemTier+1, IngredientsValue/resultcount/ProbabilityMult, ingredientstable })
-				if Logging then
-					log(serpent.block({ Item, ItemTier+1, IngredientsValue/resultcount/ProbabilityMult, ingredientstable }))
-				end
-			end
-			return { Item, ItemTier+1, IngredientsValue/resultcount }
 		end
+	else
+		log(Item.." isn't a rocket launch product, and has either no recipe that makes it, or no valid recipe that makes it")
 	end
 	--[[else
 		log("GetRecipeIngredientBreakdown was passed "..Item.." that isn't in RepliItems")
